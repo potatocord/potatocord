@@ -1,8 +1,8 @@
-# Contributing to Vencord
+# Contributing to Potatocord
 
-Vencord is a community project and welcomes any kind of contribution from anyone!
+Potatocord is a community project and welcomes any kind of contribution from anyone!
 
-We have development documentation for new contributors, which can be found at <https://docs.vencord.dev>.
+We have development documentation for new contributors, which can be found at <https://docs.potatocord.dev>.
 
 All contributions should be made in accordance with our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
@@ -37,9 +37,9 @@ Before starting your plugin:
 - No plugins that require the user to enter their own API key
 - Do not introduce new dependencies unless absolutely necessary and warranted
 
-## Improve Vencord itself
+## Improve Potatocord itself
 
-If you have any ideas on how to improve Vencord itself, or want to propose a new plugin API, feel free to open a feature request so we can discuss.
+If you have any ideas on how to improve Potatocord itself, or want to propose a new plugin API, feel free to open a feature request so we can discuss.
 
 Or if you notice any bugs or typos, feel free to fix them!
 

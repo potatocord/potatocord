@@ -4,7 +4,7 @@ on:
 
 jobs:
     Publish:
-        if: github.repository == 'Vendicated/Vencord'
+        if: github.repository == 'potatocord/potatocord'
         runs-on: ubuntu-latest
 
         steps:

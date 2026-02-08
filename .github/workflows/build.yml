@@ -52,7 +52,7 @@ jobs:
             - name: Upload DevBuild as release
               if: github.repository == 'potatocord/potatocord'
               run: |
-                  gh release upload devbuild --clobber dist/*
+                  gh release upload devbuild --clobber dist/* || gh release create devbuild --prerelease --title "DevBuild $RELEASE_TAG" --notes "Automated DevBuilds" dist/*
                   gh release edit devbuild --title "DevBuild $RELEASE_TAG"
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
