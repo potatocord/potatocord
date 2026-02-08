@@ -17,5 +17,4 @@ DON'T
 Repetitive violations of these guidelines might get your access to the repository restricted.
 
 If you feel like a user is violating these guidelines or feel treated unfairly, please refrain from vigilantism
-and instead report the issue to a moderator! The best way is joining our [official Discord community](https://potatocord.dev/discord)
-and opening a modmail ticket.
+and instead report the issue to a moderator! The best way is [opening a GitHub Issue](https://github.com/potatocord/potatocord/issues).

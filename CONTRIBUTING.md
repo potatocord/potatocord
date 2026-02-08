@@ -50,7 +50,7 @@ The source code of our documentation is available at <https://github.com/potatoc
 If you see anything outdated, incorrect or lacking, please fix it!
 If you think a new page should be added, feel free to suggest it via an issue and we can discuss.
 
-## Help out users in our Discord community
+## Help out users
 
-We have an open support channel in our [Discord community](https://potatocord.dev/discord).
+We use [GitHub Issues](https://github.com/potatocord/potatocord/issues) for support and bug reports.
 Helping out users there is always appreciated! The more, the merrier.

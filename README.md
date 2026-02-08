@@ -20,9 +20,9 @@ The cutest Discord client mod
 
 Visit https://potatocord.dev/download
 
-## Join our Support/Community Server
+## Support
 
-[Coming Soon]
+If you have any issues or need help, please [open a GitHub Issue](https://github.com/potatocord/potatocord/issues).
 
 ## Sponsors
 
