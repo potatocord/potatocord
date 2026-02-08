@@ -1,8 +1,6 @@
-name: Release Browser Extension
 on:
-    push:
-        tags:
-            - v*
+    workflow_dispatch:
+
 
 jobs:
     Publish:

@@ -18,8 +18,8 @@ Writing a plugin is the primary way to contribute.
 
 Before starting your plugin:
 - Check existing pull requests to see if someone is already working on a similar plugin
-- Check our [plugin requests tracker](https://github.com/Vencord/plugin-requests/issues) to see if there is an existing request, or if the same idea has been rejected
-- If there isn't an existing request, [open one](https://github.com/Vencord/plugin-requests/issues/new?assignees=&labels=&projects=&template=request.yml) yourself
+- Check our [plugin requests tracker](https://github.com/potatocord/plugin-requests/issues) to see if there is an existing request, or if the same idea has been rejected
+- If there isn't an existing request, [open one](https://github.com/potatocord/plugin-requests/issues/new?assignees=&labels=&projects=&template=request.yml) yourself
   and include that you'd like to work on this yourself. Then wait for feedback to see if the idea even has any chance of being accepted. Or maybe others have some ideas to improve it!
 - Familarise yourself with our plugin rules below to ensure your plugin is not banned
 
@@ -45,12 +45,12 @@ Or if you notice any bugs or typos, feel free to fix them!
 
 ## Contribute to our Documentation
 
-The source code of our documentation is available at <https://github.com/Vencord/Docs>
+The source code of our documentation is available at <https://github.com/potatocord/Docs>
 
 If you see anything outdated, incorrect or lacking, please fix it!
 If you think a new page should be added, feel free to suggest it via an issue and we can discuss.
 
 ## Help out users in our Discord community
 
-We have an open support channel in our [Discord community](https://vencord.dev/discord).
+We have an open support channel in our [Discord community](https://potatocord.dev/discord).
 Helping out users there is always appreciated! The more, the merrier.
