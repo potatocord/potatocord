@@ -2,8 +2,6 @@
 
 The cutest Discord client mod
 
-The cutest Discord client mod
-
 ![](https://github.com/user-attachments/assets/3fac98c0-c411-4d2a-97a3-13b7da8687a2)
 
 ## Features
