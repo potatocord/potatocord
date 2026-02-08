@@ -1,3 +1,9 @@
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 declare module "vosk-browser" {
     export interface RecognitionResult {
         result?: Array<{ conf: number; start: number; end: number; word: string; }>;

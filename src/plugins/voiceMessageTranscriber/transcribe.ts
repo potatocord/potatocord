@@ -1,6 +1,13 @@
-import { createModel, Model } from "vosk-browser";
-import { showToast, Toasts } from "@webpack/common";
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { PluginNative } from "@utils/types";
+import { showToast, Toasts } from "@webpack/common";
+import { createModel, Model } from "vosk-browser";
+
 import { settings } from "./settings";
 
 const Native = VencordNative.pluginHelpers.VoiceMessageTranscriber as PluginNative<typeof import("./native")>;

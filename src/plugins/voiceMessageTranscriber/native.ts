@@ -1,3 +1,9 @@
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import { IpcMainInvokeEvent } from "electron";
 
 export async function fetchAudioBlob(_: IpcMainInvokeEvent, url: string) {

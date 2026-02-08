@@ -1,6 +1,6 @@
 /*
- * Vencord, a Discord client mod
- * Copyright (c) 2023 Vendicated and contributors
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2023 Potatocord and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -13,7 +13,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-    { ignores: ["dist", "browser", "packages/vencord-types"] },
+    { ignores: ["dist", "browser", "packages/vencord-types", "packages/potatocord-types"] },
     {
         files: ["src/**/*.{tsx,ts,mts,mjs,js,jsx}", "eslint.config.mjs"],
         settings: {
@@ -60,15 +60,20 @@ export default tseslint.config(
         },
         rules: {
             /*
-             * Since it's only been a month and Vencord has already been stolen
+             * Since it's only been a month and Potatocord's predecessor has already been stolen
              * by random skids who rebranded it to "AlphaCord" and erased all license
              * information
              */
             "simple-header/header": [
                 "error",
                 {
-                    "files": ["scripts/header-new.txt", "scripts/header-old.txt"],
-                    "templates": { "author": [".*", "Vendicated and contributors"] }
+                    "files": [
+                        "scripts/header-potatocord-new.txt",
+                        "scripts/header-potatocord-old.txt",
+                        "scripts/header-new.txt",
+                        "scripts/header-old.txt"
+                    ],
+                    "templates": { "author": [".*", "Potatocord and contributors"] }
                 }
             ],
 

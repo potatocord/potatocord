@@ -1,6 +1,6 @@
 /*
- * Vencord, a modification for Discord's desktop app
- * Copyright (c) 2022 Vendicated and contributors
+ * Potatocord, a modification for Discord's desktop app
+ * Copyright (c) 2022 Potatocord and contributors
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ function toCodeBlock(s: string, indentation = 0, isDiscord = false) {
 async function printReport() {
     console.log();
 
-    console.log("# Vencord Report" + (CANARY ? " (Canary)" : ""));
+    console.log("# Potatocord Report" + (CANARY ? " (Canary)" : ""));
 
     console.log();
 
@@ -194,7 +194,7 @@ async function printReport() {
         }
 
         const body = JSON.stringify({
-            username: "Vencord Reporter" + (CANARY ? " (Canary)" : ""),
+            username: "Potatocord Reporter" + (CANARY ? " (Canary)" : ""),
             embeds
         });
 
@@ -241,7 +241,7 @@ page.on("console", async e => {
 
     const firstArg = await rawArgs[0]?.jsonValue();
 
-    const isVencord = firstArg === "[Vencord]";
+    const isVencord = firstArg === "[Potatocord]";
     const isDebug = firstArg === "[PUP_DEBUG]";
     const isReporterMeta = firstArg === "[REPORTER_META]";
 

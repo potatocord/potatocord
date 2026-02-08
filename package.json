@@ -12,7 +12,7 @@
         "url": "git+https://github.com/potatocord/potatocord.git"
     },
     "license": "GPL-3.0-or-later",
-    "author": "Potatocord",
+    "author": "Potatocord and contributors",
     "scripts": {
         "build": "node --require=./scripts/suppressExperimentalWarnings.js scripts/build/build.mjs",
         "buildStandalone": "pnpm build --standalone",

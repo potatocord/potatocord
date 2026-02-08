@@ -1,12 +1,20 @@
-import definePlugin from "@utils/types";
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 import "./styles.css";
+
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { Devs } from "@utils/constants";
+import definePlugin from "@utils/types";
 import { Message } from "@vencord/discord-types";
 import { Menu } from "@webpack/common";
-import { TranscriptionAccessory } from "./TranscriptionAccessory";
+
 import { settings } from "./settings";
 import { transcribeVoiceMessage } from "./transcribe";
-import { Devs } from "@utils/constants";
+import { TranscriptionAccessory } from "./TranscriptionAccessory";
 
 // Flag for Voice Message: 1 << 13 = 8192
 const IS_VOICE_MESSAGE_FLAG = 1 << 13;

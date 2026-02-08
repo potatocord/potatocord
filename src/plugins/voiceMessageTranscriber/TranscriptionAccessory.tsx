@@ -1,7 +1,14 @@
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+import { classNameFactory } from "@utils/css";
 import { Message } from "@vencord/discord-types";
 import { Parser, useEffect, useState } from "@webpack/common";
+
 import { addTranscriptionListener, cancelTranscription, TranscriptionCache } from "./transcribe";
-import { classNameFactory } from "@utils/css";
 
 const cl = classNameFactory("vc-transcribe-");
 
