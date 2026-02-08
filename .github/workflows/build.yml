@@ -6,7 +6,7 @@ on:
         paths:
             - .github/workflows/build.yml
             - src/**
-            - browser/**
+            # - browser/**
             - scripts/build/**
             - package.json
             - pnpm-lock.yaml
@@ -31,8 +31,8 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Build web
-              run: pnpm buildWebStandalone
+            # - name: Build web
+            #   run: pnpm buildWebStandalone
 
             - name: Build
               run: pnpm build --standalone

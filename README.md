@@ -9,7 +9,6 @@ The cutest Discord client mod
 -   Easy to install
 -   [100+ built in plugins](https://potatocord.dev/plugins)
 -   Fairly lightweight despite the many inbuilt plugins
--   Excellent Browser Support: Run Potatocord in your Browser via extension or UserScript
 -   Works on any Discord branch: Stable, Canary or PTB all work
 -   Custom CSS and Themes: Inbuilt css editor with support to import any css files (including BetterDiscord themes)
 -   Privacy friendly: blocks Discord analytics & crash reporting out of the box and has no telemetry
