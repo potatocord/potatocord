@@ -44,6 +44,14 @@ jobs:
               run: |
                   rm -rf dist/*-unpacked dist/vendor Vencord.user.css vencordDesktopRenderer.css vencordDesktopRenderer.css.map
 
+            - name: Create potatocord.asar
+              run: |
+                  mkdir asar_build
+                  cp dist/*.js dist/*.css dist/*.map asar_build/
+                  cp dist/patcher.js asar_build/index.js
+                  echo '{"main":"index.js","name":"potatocord"}' > asar_build/package.json
+                  npx asar pack asar_build dist/potatocord.asar
+
             - name: Get some values needed for the release
               id: release_values
               run: |
