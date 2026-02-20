@@ -9,8 +9,10 @@ import { UpdateLogger } from "@utils/updater";
 import { Alerts, Parser } from "@webpack/common";
 
 function getErrorMessage(e: any) {
-    if (!e?.code || !e.cmd)
+    if (!e?.code || !e.cmd) {
+        if (e?.message) return `An error occurred: ${e.message}`;
         return "An unknown error occurred.\nPlease try again or see the console for more info.";
+    }
 
     const { code, path, cmd, stderr } = e;
 
