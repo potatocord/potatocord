@@ -47,13 +47,13 @@ function Updater() {
         <SettingsTab>
             <FormSwitch
                 title="Automatically update"
-                description="Automatically update Vencord without confirmation prompt"
+                description="Automatically update Potatocord without confirmation prompt"
                 value={settings.autoUpdate}
                 onChange={(v: boolean) => settings.autoUpdate = v}
             />
             <FormSwitch
                 title="Get notified when an automatic update completes"
-                description="Show a notification when Vencord automatically updates"
+                description="Show a notification when Potatocord automatically updates"
                 value={settings.autoUpdateNotification}
                 onChange={(v: boolean) => settings.autoUpdateNotification = v}
                 disabled={!settings.autoUpdate}
