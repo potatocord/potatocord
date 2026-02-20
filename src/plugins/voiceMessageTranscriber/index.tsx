@@ -66,7 +66,7 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }: { m
 export default definePlugin({
     name: "VoiceMessageTranscriber",
     description: "Transcribes voice messages using local speech recognition (Vosk).",
-    authors: [Devs.modpotato],
+    authors: [Devs.modpotato, Devs.nerddo],
     settings,
     contextMenus: {
         "message": messageCtxPatch
