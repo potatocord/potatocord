@@ -158,16 +158,7 @@ export default definePlugin({
             key: key + "_panel",
             type: LayoutTypes.PANEL,
             useTitle: () => panelTitle,
-            buildLayout: () => [{
-                type: LayoutTypes.CATEGORY,
-                key: key + "_category",
-                buildLayout: () => [{
-                    type: LayoutTypes.CUSTOM,
-                    key: key + "_custom",
-                    Component: Component,
-                    useSearchTerms: () => [title]
-                }]
-            }]
+            render: () => React.createElement(Component),
         };
 
         return ({
