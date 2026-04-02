@@ -143,6 +143,13 @@ export default definePlugin({
             }
         },
         {
+            find: ".buildLayout().every",
+            replacement: {
+                match: /(\i)\.buildLayout\(\)(?=\.every)/,
+                replace: "$self.buildLayout($1)"
+            }
+        },
+        {
             find: "getWebUserSettingFromSection",
             replacement: {
                 match: /new Map\(\[(?=\[.{0,10}\.ACCOUNT,.{0,10}\.ACCOUNT_PANEL)/,
@@ -159,6 +166,7 @@ export default definePlugin({
             type: LayoutTypes.PANEL,
             useTitle: () => panelTitle,
             render: () => React.createElement(Component),
+            buildLayout: () => [], // Return empty array to satisfy .every() calls
         };
 
         return ({
