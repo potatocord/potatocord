@@ -86,7 +86,8 @@ export function buildPluginMenuEntries(includeEmpty = false) {
 
                         hasAnyOption = true;
 
-                        const s = pluginSettings[p.name];
+                        const s = pluginSettings[p.name] ?? {};
+                        if (!pluginSettings[p.name]) pluginSettings[p.name] = s;
 
                         const baseProps = {
                             id: `${p.name}-${key}`,
@@ -128,8 +129,8 @@ export function buildPluginMenuEntries(includeEmpty = false) {
                                 );
                                 break;
                             case OptionType.SLIDER:
-                                // The menu slider doesn't support these options. Skip to avoid confusion
                                 if (option.stickToMarkers || option.componentProps) continue;
+                                if (!option.markers?.length) continue;
 
                                 options.push(
                                     <Menu.MenuControlItem
