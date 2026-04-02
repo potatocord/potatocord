@@ -1,7 +1,7 @@
 {
     "name": "potatocord",
     "private": "true",
-    "version": "1.14.3",
+    "version": "1.14.4",
     "description": "The cutest Discord client mod",
     "homepage": "https://github.com/potatocord/potatocord#readme",
     "bugs": {
