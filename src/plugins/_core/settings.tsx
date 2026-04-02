@@ -32,6 +32,7 @@ let LayoutTypes = {
     SECTION: 1,
     SIDEBAR_ITEM: 2,
     PANEL: 3,
+    TABS: 4,
     CATEGORY: 5,
     CUSTOM: 19,
 };
@@ -165,8 +166,16 @@ export default definePlugin({
             key: key + "_panel",
             type: LayoutTypes.PANEL,
             useTitle: () => panelTitle,
-            render: () => React.createElement(Component),
-            buildLayout: () => [], // Return empty array to satisfy .every() calls
+            buildLayout: () => [{
+                type: LayoutTypes.TABS, // Use TABS (4) instead of deprecated CATEGORY (5)
+                key: key + "_tabs",
+                buildLayout: () => [{
+                    type: LayoutTypes.CUSTOM,
+                    key: key + "_custom",
+                    Component: Component,
+                    useSearchTerms: () => [title]
+                }]
+            }]
         };
 
         return ({
