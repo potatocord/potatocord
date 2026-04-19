@@ -32,7 +32,6 @@ let LayoutTypes = {
     SECTION: 1,
     SIDEBAR_ITEM: 2,
     PANEL: 3,
-    TABS: 4,
     CATEGORY: 5,
     CUSTOM: 19,
 };
@@ -81,7 +80,7 @@ interface SettingsLayoutBuilder {
 const settings = definePluginSettings({
     settingsLocation: {
         type: OptionType.SELECT,
-        description: "Where to put the Potatocord settings section",
+        description: "Where to put the Vencord settings section",
         options: [
             { label: "At the very top", value: "top" },
             { label: "Above the Nitro section", value: "aboveNitro", default: true },
@@ -93,16 +92,6 @@ const settings = definePluginSettings({
     }
 });
 
-const settingsSectionMap: [string, string][] = [
-    ["VencordSettings", "vencord_main_panel"],
-    ["VencordPlugins", "vencord_plugins_panel"],
-    ["VencordThemes", "vencord_themes_panel"],
-    ["VencordUpdater", "vencord_updater_panel"],
-    ["VencordCloud", "vencord_cloud_panel"],
-    ["VencordBackupAndRestore", "vencord_backup_restore_panel"],
-    ["VencordPatchHelper", "vencord_patch_helper_panel"]
-];
-
 export default definePlugin({
     name: "Settings",
     description: "Adds Settings UI and debug info",
@@ -110,7 +99,6 @@ export default definePlugin({
     required: true,
 
     settings,
-    settingsSectionMap,
 
     patches: [
         {
@@ -121,13 +109,6 @@ export default definePlugin({
                     replace: (m, _buildOverride, makeRow, component, props) => {
                         props = props.replace(/children:\[.+\]/, "");
                         return `${m},$self.makeInfoElements(${component},${props}).map(e=>${makeRow}e})),`;
-                    }
-                },
-                {
-                    match: /"text-xs\/normal".{0,300}?\[\(0,\i\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}className:\i.\i,.+?\})\)," "/,
-                    replace: (m, component, props) => {
-                        props = props.replace(/children:\[.+\]/, "");
-                        return `${m},$self.makeInfoElements(${component},${props})`;
                     }
                 },
                 {
@@ -142,20 +123,6 @@ export default definePlugin({
                 match: /(\i)\.buildLayout\(\)(?=\.map)/,
                 replace: "$self.buildLayout($1)"
             }
-        },
-        {
-            find: ".buildLayout().every",
-            replacement: {
-                match: /(\i)\.buildLayout\(\)(?=\.every)/,
-                replace: "$self.buildLayout($1)"
-            }
-        },
-        {
-            find: "getWebUserSettingFromSection",
-            replacement: {
-                match: /new Map\(\[(?=\[.{0,10}\.ACCOUNT,.{0,10}\.ACCOUNT_PANEL)/,
-                replace: "new Map([...$self.getSettingsSectionMappings(),"
-            }
         }
     ],
 
@@ -167,8 +134,8 @@ export default definePlugin({
             type: LayoutTypes.PANEL,
             useTitle: () => panelTitle,
             buildLayout: () => [{
-                type: LayoutTypes.TABS, // Use TABS (4) instead of deprecated CATEGORY (5)
-                key: key + "_tabs",
+                type: LayoutTypes.CATEGORY,
+                key: key + "_category",
                 buildLayout: () => [{
                     type: LayoutTypes.CUSTOM,
                     key: key + "_custom",
@@ -187,10 +154,6 @@ export default definePlugin({
         });
     },
 
-    getSettingsSectionMappings() {
-        return settingsSectionMap;
-    },
-
     buildLayout(originalLayoutBuilder: SettingsLayoutBuilder) {
         const layout = originalLayoutBuilder.buildLayout();
         if (originalLayoutBuilder.key !== "$Root") return layout;
@@ -203,8 +166,8 @@ export default definePlugin({
         const vencordEntries: SettingsLayoutNode[] = [
             buildEntry({
                 key: "vencord_main",
-                title: "Potatocord",
-                panelTitle: "Potatocord Settings",
+                title: "Vencord",
+                panelTitle: "Vencord Settings",
                 Component: VencordTab,
                 Icon: MainSettingsIcon
             }),
@@ -223,14 +186,14 @@ export default definePlugin({
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
                 key: "vencord_updater",
                 title: "Updater",
-                panelTitle: "Potatocord Updater",
+                panelTitle: "Vencord Updater",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
                 key: "vencord_cloud",
                 title: "Cloud",
-                panelTitle: "Potatocord Cloud",
+                panelTitle: "Vencord Cloud",
                 Component: CloudTab,
                 Icon: CloudIcon
             }),
@@ -264,7 +227,7 @@ export default definePlugin({
         const vencordSection: SettingsLayoutNode = {
             key: "vencord_section",
             type: LayoutTypes.SECTION,
-            useTitle: () => "Potatocord Settings",
+            useTitle: () => "Vencord Settings",
             buildLayout: () => vencordEntries
         };
 
@@ -293,6 +256,7 @@ export default definePlugin({
         return layout;
     },
 
+    /** @deprecated Use customEntries */
     customSections: [] as ((SectionTypes: SectionTypes) => any)[],
     customEntries: [] as EntryOptions[],
 

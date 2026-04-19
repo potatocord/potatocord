@@ -70,6 +70,7 @@ const userContextPatch: NavContextMenuPatchCallback = (children, { user }: { use
 export default definePlugin({
     name: "ReviewDB",
     description: "Review other users (Adds a new settings to profiles)",
+    tags: ["Friends", "Servers"],
     authors: [Devs.mantikafasi, Devs.Ven],
 
     settings,
@@ -169,37 +170,38 @@ export default definePlugin({
                         >
                             <div className={classes(ProfileCardOverlayClasses.overlay, ProfileCardContainerClasses.innerContainer, ProfileCardClasses.card)}>
                                 <Paragraph size={isSideBar ? "sm" : "xs"} weight="medium">User Reviews</Paragraph>
-                                {!!reviewData?.reviewCount ? (
-                                    <div className={ProfileCardContainerClasses.icons}>
-                                        {reviewData.reviews
-                                            .filter(review => review.id !== 0)
-                                            .slice(0, 4)
-                                            .reverse()
-                                            .map((review, idx) => {
-                                                const showCount = idx === 3 && reviewData.reviewCount > 4;
+                                {!!reviewData?.reviewCount
+                                    ? (
+                                        <div className={ProfileCardContainerClasses.icons}>
+                                            {reviewData.reviews
+                                                .filter(review => review.id !== 0)
+                                                .slice(0, 4)
+                                                .reverse()
+                                                .map((review, idx) => {
+                                                    const showCount = idx === 3 && reviewData.reviewCount > 4;
 
-                                                return (
-                                                    <div className={ProfileCardContainerClasses.icon} key={review.id}>
-                                                        <img
-                                                            src={review.sender.profilePhoto}
-                                                            alt={review.sender.username}
-                                                            className={showCount ? ProfileCardContainerClasses.displayCount : undefined}
-                                                            onError={e => e.currentTarget.src = IconUtils.getDefaultAvatarURL(review.sender.discordID)}
-                                                        />
-                                                        {showCount && (
-                                                            <div className={ProfileCardContainerClasses.displayCountText}>
-                                                                <Span className={ProfileCardContainerClasses.displayCountTextColor} size="xs" weight="medium" defaultColor={false}>
-                                                                    +{reviewData.reviewCount - 3}
-                                                                </Span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                    </div>
-                                ) : (
-                                    <Paragraph size={isSideBar ? "sm" : "xs"}>{reviewData?.hasOptedOut ? "User opted out" : "No reviews yet"}</Paragraph>
-                                )}
+                                                    return (
+                                                        <div className={ProfileCardContainerClasses.icon} key={review.id}>
+                                                            <img
+                                                                src={review.sender.profilePhoto}
+                                                                alt={review.sender.username}
+                                                                className={showCount ? ProfileCardContainerClasses.displayCount : undefined}
+                                                                onError={e => e.currentTarget.src = IconUtils.getDefaultAvatarURL(review.sender.discordID)}
+                                                            />
+                                                            {showCount && (
+                                                                <div className={ProfileCardContainerClasses.displayCountText}>
+                                                                    <Span className={ProfileCardContainerClasses.displayCountTextColor} size="xs" weight="medium" defaultColor={false}>
+                                                                        +{reviewData.reviewCount - 3}
+                                                                    </Span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    )
+                                    : <Paragraph size={isSideBar ? "sm" : "xs"}>{reviewData?.hasOptedOut ? "User opted out" : "No reviews yet"}</Paragraph>
+                                }
                             </div>
                         </Clickable>
                     </li>
