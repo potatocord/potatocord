@@ -9,7 +9,7 @@ import { Button, Forms, showToast, Toasts } from "@webpack/common";
 import { DownloadError, ModelDownloadManager } from "../utils/downloadManager";
 import { ASRModel, getHuggingFaceUrl, ModelComponent } from "../models/registry";
 
-const { FormText, FormSection } = Forms;
+const { FormText } = Forms;
 
 // ============================================================================
 // Type Definitions
@@ -125,7 +125,7 @@ function formatETA(seconds: number): string {
 /**
  * Checkmark icon component
  */
-function CheckmarkIcon(): JSX.Element {
+function CheckmarkIcon(): React.ReactElement {
     return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={checkmarkStyles}>
             <path
@@ -139,7 +139,7 @@ function CheckmarkIcon(): JSX.Element {
 /**
  * Error icon component
  */
-function ErrorIcon(): JSX.Element {
+function ErrorIcon(): React.ReactElement {
     return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={errorStyles}>
             <path
@@ -153,7 +153,7 @@ function ErrorIcon(): JSX.Element {
 /**
  * Spinner component for loading states
  */
-function Spinner(): JSX.Element {
+function Spinner(): React.ReactElement {
     return (
         <>
             <style>{`
@@ -170,7 +170,7 @@ function Spinner(): JSX.Element {
 /**
  * Progress bar component
  */
-function ProgressBar({ progress }: { progress: number }): JSX.Element {
+function ProgressBar({ progress }: { progress: number }): React.ReactElement {
     return (
         <div style={progressBarContainerStyles}>
             <div style={progressBarFillStyles(progress)} />
@@ -182,7 +182,7 @@ function ProgressBar({ progress }: { progress: number }): JSX.Element {
 // Main Component
 // ============================================================================
 
-export function ModelDownload({ model, onDownloadComplete, onDownloadError }: ModelDownloadProps): JSX.Element {
+export function ModelDownload({ model, onDownloadComplete, onDownloadError }: ModelDownloadProps): React.ReactElement {
     const [state, setState] = React.useState<DownloadState>({ status: "idle" });
     const [abortController, setAbortController] = React.useState<AbortController | null>(null);
     const [downloadManager] = React.useState(() => new ModelDownloadManager());
@@ -327,9 +327,10 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
 
     return (
         <div style={containerStyles}>
-            <FormSection title={`Download ${model.name}`}>
+            <div>
+                <Forms.FormTitle tag="h3">Download {model.name}</Forms.FormTitle>
                 {model.sizeMB > 0 && (
-                    <FormText type="description">
+                    <FormText>
                         Size: {model.sizeMB} MB
                     </FormText>
                 )}
@@ -396,7 +397,7 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
                         )}
                     </div>
                 )}
-            </FormSection>
+            </div>
         </div>
     );
 }

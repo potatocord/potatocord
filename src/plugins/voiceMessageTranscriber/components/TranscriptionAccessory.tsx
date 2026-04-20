@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button, Spinner, Text } from "@webpack/common";
-import { useEffect, useState } from "@webpack/common";
+import { Button, Text } from "@webpack/common";
+import React, { useEffect, useState } from "react";
 
 import { addTranscriptionListener, cancelTranscription, isTranscriptionInProgress, TranscriptionCache } from "../transcribe";
 
@@ -60,7 +60,13 @@ export function TranscriptionAccessory({ messageId }: TranscriptionAccessoryProp
         >
             {isTranscribing && (
                 <>
-                    <Spinner type="spinning-circle" style={{ width: 16, height: 16 }} />
+                    <div style={{
+                        width: 16, height: 16,
+                        border: "2px solid var(--background-tertiary)",
+                        borderTopColor: "var(--brand-experiment)",
+                        borderRadius: "50%",
+                        animation: "model-download-spin 1s linear infinite"
+                    }} />
                     <Text variant="text-sm/normal" style={{ color: "var(--text-muted)" }}>
                         Transcribing...
                     </Text>

@@ -6,7 +6,8 @@
 
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
-import { Button, Forms, Text, showConfirmationModal, useEffect, useState } from "@webpack/common";
+import React, { useEffect, useState } from "react";
+import { Button, Forms, Text } from "@webpack/common";
 
 import { ModelDownloadManager } from "../utils/downloadManager";
 import { getStorageInfo, StorageInfo } from "../utils/storageService";
@@ -82,7 +83,7 @@ function ProgressBar({
     usedBytes: number;
     totalBytes: number;
     warning: boolean;
-}): JSX.Element {
+}): React.ReactElement {
     const percentage = totalBytes > 0 ? Math.min((usedBytes / totalBytes) * 100, 100) : 0;
 
     const containerStyles: React.CSSProperties = {
@@ -112,7 +113,7 @@ function ProgressBar({
 /**
  * Warning banner for high storage usage
  */
-function WarningBanner(): JSX.Element {
+function WarningBanner(): React.ReactElement {
     const bannerStyles: React.CSSProperties = {
         display: "flex",
         alignItems: "center",
@@ -146,7 +147,7 @@ function ModelRow({
     model: CachedModel;
     onDelete: (id: string) => void;
     isDeleting: boolean;
-}): JSX.Element {
+}): React.ReactElement {
     const rowStyles: React.CSSProperties = {
         display: "flex",
         alignItems: "center",
@@ -208,7 +209,7 @@ function ModelRow({
  * - Delete buttons per model
  * - "Clear All" button with confirmation
  */
-export function StorageIndicator({ downloadManager }: StorageIndicatorProps): JSX.Element {
+export function StorageIndicator({ downloadManager }: StorageIndicatorProps): React.ReactElement {
     // Storage state
     const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
     const [models, setModels] = useState<CachedModel[]>([]);
@@ -273,28 +274,18 @@ export function StorageIndicator({ downloadManager }: StorageIndicatorProps): JS
      * Clear all models with confirmation
      */
     function handleClearAll() {
-        showConfirmationModal({
-            header: "Clear All Models",
-            content: `Are you sure you want to delete all ${models.length} downloaded models? This action cannot be undone.`,
-            danger: true,
-            onConfirm: async () => {
-                try {
-                    setIsClearingAll(true);
-                    await downloadManager.clearCache();
-
-                    // Update local state immediately
-                    setModels([]);
-
-                    // Refresh storage info
-                    const info = await getStorageInfo(downloadManager);
-                    setStorageInfo(info);
-                } catch (error) {
-                    console.error("[StorageIndicator] Failed to clear all models:", error);
-                } finally {
-                    setIsClearingAll(false);
-                }
-            },
-        });
+        if (window.confirm(`Are you sure you want to delete all ${models.length} downloaded models? This action cannot be undone.`)) {
+            setIsClearingAll(true);
+            downloadManager.clearCache().then(async () => {
+                setModels([]);
+                const info = await getStorageInfo(downloadManager);
+                setStorageInfo(info);
+            }).catch(error => {
+                console.error("[StorageIndicator] Failed to clear all models:", error);
+            }).finally(() => {
+                setIsClearingAll(false);
+            });
+        }
     }
 
     // Container styles

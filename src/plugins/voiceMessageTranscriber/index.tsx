@@ -11,24 +11,10 @@ import { Devs } from "@utils/constants";
 import { Menu } from "@webpack/common";
 import definePlugin from "@utils/types";
 
-import { ASRBackend } from "./models/registry";
-import { getDefaultModelForBackend } from "./models/registry";
 import { migrateSettings } from "./migration";
 import { settings } from "./settings";
 import { transcribeVoiceMessage } from "./transcribe";
-import { TranscriptionAccessory } from "./TranscriptionAccessory";
-
-const BACKEND_OPTIONS: { id: ASRBackend; name: string }[] = [
-    { id: "vosk", name: "Vosk (Legacy)" },
-    { id: "onnx-webgpu", name: "ONNX WebGPU" },
-    { id: "onnx-cpu", name: "ONNX CPU" },
-];
-
-function getBackendDisplayName(backendId: ASRBackend): string {
-    const option = BACKEND_OPTIONS.find(b => b.id === backendId);
-    return option?.name || backendId;
-}
-
+import { TranscriptionAccessory } from "./components/TranscriptionAccessory";
 const IS_VOICE_MESSAGE_FLAG = 1 << 13;
 
 const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }) => {
@@ -39,48 +25,24 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }) => 
     if (!isVoiceMessage && !isAudioAttachment) return;
     if (!attachment?.url) return;
 
-    // Main transcribe item with backend indicator
+    // Main transcribe item
     const transcribeItem = (
         <Menu.MenuItem
             id="vc-transcribe-voice"
-            label={`Transcribe (${getBackendDisplayName(settings.store.activeBackend)})`}
+            label="Transcribe"
             action={() => transcribeVoiceMessage(message.id, attachment.url)}
         />
     );
 
-    // Backend switcher submenu
-    const switchBackendSubmenu = (
-        <Menu.MenuItem
-            id="vc-asr-backend"
-            label="Switch Backend"
-        >
-            {BACKEND_OPTIONS.map(backend => (
-                <Menu.MenuCheckboxItem
-                    key={backend.id}
-                    id={`vc-asr-backend-${backend.id}`}
-                    checked={settings.store.activeBackend === backend.id}
-                    action={() => {
-                        settings.store.activeBackend = backend.id;
-                        // Auto-select default model for new backend
-                        const defaultModel = getDefaultModelForBackend(backend.id);
-                        if (defaultModel) {
-                            settings.store.activeModel = defaultModel.id;
-                        }
-                    }}
-                >
-                    {backend.name}
-                </Menu.MenuCheckboxItem>
-            ))}
-        </Menu.MenuItem>
-    );
+
 
     const group = findGroupChildrenByChildId("copy-text", children) || findGroupChildrenByChildId("copy-link", children);
     
     if (group) {
         const copyIndex = group.findIndex(c => c?.props?.id === "copy-text" || c?.props?.id === "copy-link");
-        group.splice(copyIndex !== -1 ? copyIndex + 1 : group.length, 0, transcribeItem, switchBackendSubmenu);
+        group.splice(copyIndex !== -1 ? copyIndex + 1 : group.length, 0, transcribeItem);
     } else {
-        children.push(transcribeItem, switchBackendSubmenu);
+        children.push(transcribeItem);
     }
 };
 
@@ -95,5 +57,5 @@ export default definePlugin({
     start() {
         migrateSettings();
     },
-    renderMessageAccessory: props => <TranscriptionAccessory message={props.message} />,
+    renderMessageAccessory: props => <TranscriptionAccessory messageId={props.message.id} />,
 });

@@ -15,7 +15,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
-import { Button, Forms, Slider, Switch } from "@webpack/common";
+import { Button, Forms, Slider } from "@webpack/common";
+import { Switch } from "@components/Switch";
 
 import { Quantization } from "../backends/types";
 import { ASRBackend } from "../models/registry";
@@ -232,7 +233,6 @@ function BooleanSetting({
                 <Switch
                     checked={value}
                     onChange={onChange}
-                    aria-label={title}
                 />
             </div>
         </div>
@@ -265,8 +265,8 @@ function SliderSetting({
             <Slider
                 minValue={min}
                 maxValue={max}
-                step={step}
-                value={value}
+                keyboardStep={step}
+                initialValue={value}
                 onValueChange={onChange}
                 className="vc-asr-slider"
                 aria-label={title}
@@ -352,7 +352,7 @@ export function AdvancedSettings({
                         disabled={isDeviceDisabled}
                     />
 
-                    <Forms.FormDivider className="vc-asr-setting-divider" />
+                    <hr className="vc-asr-setting-divider" />
 
                     <SelectSetting
                         title="Quantization"
@@ -361,7 +361,7 @@ export function AdvancedSettings({
                         onChange={handleQuantizationChange}
                     />
 
-                    <Forms.FormDivider className="vc-asr-setting-divider" />
+                    <hr className="vc-asr-setting-divider" />
 
                     <SliderSetting
                         title="Max Cache Size"
@@ -373,7 +373,7 @@ export function AdvancedSettings({
                         formatValue={formatCacheSize}
                     />
 
-                    <Forms.FormDivider className="vc-asr-setting-divider" />
+                    <hr className="vc-asr-setting-divider" />
 
                     <BooleanSetting
                         title="WiFi-Only Downloads"
@@ -382,7 +382,7 @@ export function AdvancedSettings({
                         onChange={handleWifiToggle}
                     />
 
-                    <Forms.FormDivider className="vc-asr-setting-divider" />
+                    <hr className="vc-asr-setting-divider" />
 
                     <BooleanSetting
                         title="Debug Logging"
@@ -391,7 +391,7 @@ export function AdvancedSettings({
                         onChange={handleDebugToggle}
                     />
 
-                    <Forms.FormDivider className="vc-asr-setting-divider" />
+                    <hr className="vc-asr-setting-divider" />
 
                     <div className="vc-asr-setting vc-asr-reset-setting">
                         <div className="vc-asr-reset-row">

@@ -6,7 +6,8 @@
 
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
-import { Button, Forms, Select, useEffect, useState } from "@webpack/common";
+import React, { useEffect, useState } from "react";
+import { Button, Forms, Select } from "@webpack/common";
 
 import { ASRBackend, ASRModel, AVAILABLE_MODELS, getDefaultModelForBackend, MODELS_BY_BACKEND } from "../models/registry";
 import { defaultDownloadManager, DownloadProgress } from "../utils/downloadManager";
@@ -334,8 +335,9 @@ export function BasicSettings({
                         disabled: opt.value === "onnx-webgpu" && webGPUChecked && !hasWebGPU,
                     }))}
                     placeholder="Select backend"
-                    value={activeBackend}
-                    onChange={handleBackendChange}
+                    isSelected={v => v === activeBackend}
+                    select={handleBackendChange}
+                    serialize={v => String(v)}
                     isDisabled={false}
                 />
                 {activeBackend === "onnx-webgpu" && webGPUChecked && !hasWebGPU && (
@@ -353,8 +355,9 @@ export function BasicSettings({
                 <Select
                     options={modelOptions}
                     placeholder={hasBackendModels ? "Select model" : "No models available for this backend"}
-                    value={activeModel}
-                    onChange={(value) => onModelChange(value)}
+                    isSelected={v => v === activeModel}
+                    select={(value) => onModelChange(value)}
+                    serialize={v => String(v)}
                     isDisabled={!hasBackendModels || checkingModels}
                 />
                 {!hasBackendModels && (

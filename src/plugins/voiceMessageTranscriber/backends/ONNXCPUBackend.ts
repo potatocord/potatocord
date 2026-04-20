@@ -598,7 +598,7 @@ export class ONNXCPUBackend implements ASRBackend {
             } else {
                 tokens.push(predictedToken);
                 prevToken = predictedToken;
-                decoderState = newState;
+                decoderState = new Float32Array(newState);
                 encoderFrameIdx += Math.max(1, predictedDuration + 1);
 
                 const char = this.tokenToChar(predictedToken);
@@ -608,7 +608,7 @@ export class ONNXCPUBackend implements ASRBackend {
                         segments.push({
                             id: segments.length,
                             start: segmentStartTime,
-                            end,
+                            end: endTime,
                             text: segmentText + char,
                             confidence: tokenScore,
                         });

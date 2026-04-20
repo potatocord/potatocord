@@ -93,7 +93,7 @@ export class VoskBackend implements ASRBackend {
      * @param onProgress - Optional progress callback
      */
     async loadModel(modelId: string, onProgress?: ProgressCallback): Promise<void> {
-        const selectedModel = settings.store.model;
+        const selectedModel = settings.store.legacyModel;
         const url = selectedModel === "custom" && settings.store.customModelUrl
             ? settings.store.customModelUrl
             : SMALL_MODEL_URL;

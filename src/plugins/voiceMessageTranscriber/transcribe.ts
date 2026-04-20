@@ -34,7 +34,7 @@ let currentBackendId: ASRBackendId | null = null;
  * Supports backend switching without page reload.
  */
 export async function getActiveBackend(): Promise<ASRBackend> {
-    const backendId = settings.store.activeBackend;
+    const backendId = (settings.store.activeBackend as ASRBackendId) || "onnx-webgpu";
 
     if (currentBackendId !== backendId) {
         if (activeBackendInstance && currentBackendId) {
@@ -231,7 +231,7 @@ export async function transcribeVoiceMessage(messageId: string, audioUrl: string
 
         const result = await backend.transcribe(audioData, {
             sampleRate: 16000,
-            language: settings.store.activeBackend === "vosk" ? "en" : (settings.store.language || "auto"),
+            language: settings.store.activeBackend === "vosk" ? "en" : "auto",
         });
 
         if (abortController.signal.aborted) return;

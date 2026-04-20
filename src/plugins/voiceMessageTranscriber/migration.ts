@@ -34,9 +34,9 @@ function isLegacyV1Format(settings: unknown): settings is LegacyV1Settings {
     return "model" in s && !("activeBackend" in s);
 }
 
-export function backupLegacySettings(): void {
+export async function backupLegacySettings(): Promise<void> {
     try {
-        const currentSettings = DataStore.get(LEGACY_SETTINGS_KEY);
+        const currentSettings = await DataStore.get(LEGACY_SETTINGS_KEY);
         if (currentSettings) {
             DataStore.set(`${LEGACY_SETTINGS_KEY}.v1-backup`, currentSettings);
             logger.info("Legacy settings backed up", { backupKey: `${LEGACY_SETTINGS_KEY}.v1-backup` });
@@ -46,15 +46,15 @@ export function backupLegacySettings(): void {
     }
 }
 
-export function migrateSettings(): void {
+export async function migrateSettings(): Promise<void> {
     try {
-        const hasMigrated = DataStore.get(MIGRATION_KEY);
+        const hasMigrated = await DataStore.get(MIGRATION_KEY);
         if (hasMigrated) {
             logger.info("Migration already completed, skipping");
             return;
         }
 
-        const rawSettings = DataStore.get(LEGACY_SETTINGS_KEY);
+        const rawSettings = await DataStore.get(LEGACY_SETTINGS_KEY);
         
         if (!rawSettings) {
             logger.info("No existing settings found, marking as migrated (fresh install)");
@@ -70,7 +70,7 @@ export function migrateSettings(): void {
 
         const oldSettings = rawSettings as LegacyV1Settings;
 
-        backupLegacySettings();
+        await backupLegacySettings();
 
         const newSettings = {
             ...oldSettings,
@@ -104,9 +104,9 @@ export function migrateSettings(): void {
     }
 }
 
-export function rollbackMigration(): void {
+export async function rollbackMigration(): Promise<void> {
     try {
-        const backup = DataStore.get(`${LEGACY_SETTINGS_KEY}.v1-backup`);
+        const backup = await DataStore.get(`${LEGACY_SETTINGS_KEY}.v1-backup`);
         if (backup) {
             DataStore.set(LEGACY_SETTINGS_KEY, backup);
             DataStore.set(MIGRATION_KEY, false);
@@ -123,15 +123,15 @@ export function rollbackMigration(): void {
     }
 }
 
-export function getMigrationStatus(): {
+export async function getMigrationStatus(): Promise<{
     hasMigrated: boolean;
     hasBackup: boolean;
     settingsFormat: "v1" | "v2" | "unknown";
-} {
+}> {
     try {
-        const hasMigrated = !!DataStore.get(MIGRATION_KEY);
-        const hasBackup = !!DataStore.get(`${LEGACY_SETTINGS_KEY}.v1-backup`);
-        const rawSettings = DataStore.get(LEGACY_SETTINGS_KEY);
+        const hasMigrated = !!(await DataStore.get(MIGRATION_KEY));
+        const hasBackup = !!(await DataStore.get(`${LEGACY_SETTINGS_KEY}.v1-backup`));
+        const rawSettings = await DataStore.get(LEGACY_SETTINGS_KEY);
         
         let settingsFormat: "v1" | "v2" | "unknown" = "unknown";
         if (rawSettings) {
@@ -144,10 +144,10 @@ export function getMigrationStatus(): {
     }
 }
 
-export function forceRemigration(): void {
+export async function forceRemigration(): Promise<void> {
     try {
         DataStore.set(MIGRATION_KEY, false);
-        migrateSettings();
+        await migrateSettings();
         logger.info("Force re-migration completed");
     } catch (err) {
         logger.error("Force re-migration failed", { error: String(err) });
