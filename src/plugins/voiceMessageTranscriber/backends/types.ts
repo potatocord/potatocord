@@ -237,9 +237,9 @@ export type ONNXWebGPUBackend = ASRBackend & {
     id: "onnx-webgpu";
 };
 
-/** Placeholder for Vosk browser backend (existing implementation) */
+/** Vosk browser backend (legacy implementation) */
 export type VoskBackend = ASRBackend & {
-    id: "vosk-browser";
+    id: "vosk";
 };
 
 /** Placeholder for Transformers.js backend */

@@ -6,38 +6,118 @@
 
 import { PluginNative } from "@utils/types";
 import { showToast, Toasts } from "@webpack/common";
-import { createModel, Model } from "vosk-browser";
 
 import { settings } from "./settings";
+import { showUserError } from "./utils/errorTranslator";
+import { ASRBackend } from "./backends/types";
+import { voskBackend } from "./backends/VoskBackend";
+import { onnxWebGPUBackend } from "./backends/ONNXWebGPUBackend";
+import { onnxCPUBackend } from "./backends/ONNXCPUBackend";
+import { ASRBackend as ASRBackendId } from "./models/registry";
 
 const Native = VencordNative.pluginHelpers.VoiceMessageTranscriber as PluginNative<typeof import("./native")>;
 
-const SMALL_MODEL_URL = "https://ccoreilly.github.io/vosk-browser/models/vosk-model-small-en-us-0.15.tar.gz";
+// Backend Registry
 
-let modelPromise: Promise<Model> | null = null;
-let currentModelUrl: string | null = null;
+const backends: Record<ASRBackendId, ASRBackend> = {
+    "vosk": voskBackend,
+    "onnx-webgpu": onnxWebGPUBackend,
+    "onnx-cpu": onnxCPUBackend,
+};
 
-async function getModel() {
-    const selectedModel = settings.store.model;
-    const url = selectedModel === "custom" ? settings.store.customModelUrl : SMALL_MODEL_URL;
+let activeBackendInstance: ASRBackend | null = null;
+let currentBackendId: ASRBackendId | null = null;
 
-    if (!url) {
-        throw new Error("No model URL provided");
+/**
+ * Get the currently active backend based on settings.
+ * Implements lazy initialization and backend instance caching.
+ * Supports backend switching without page reload.
+ */
+export async function getActiveBackend(): Promise<ASRBackend> {
+    const backendId = settings.store.activeBackend;
+
+    if (currentBackendId !== backendId) {
+        if (activeBackendInstance && currentBackendId) {
+            try {
+                await activeBackendInstance.dispose?.();
+            } catch (err) {
+                console.warn("[VoiceMessageTranscriber] Error disposing old backend:", err);
+            }
+        }
+
+        activeBackendInstance = null;
+        currentBackendId = backendId;
     }
 
-    if (!modelPromise || currentModelUrl !== url) {
-        currentModelUrl = url;
-        modelPromise = (async () => {
-            const model = await createModel(url);
-            return model;
-        })();
+    if (activeBackendInstance) {
+        return activeBackendInstance;
     }
-    return modelPromise;
+
+    const backend = backends[backendId];
+    if (!backend) {
+        throw new Error(`Unknown backend: ${backendId}`);
+    }
+
+    const isAvailable = await backend.isAvailable();
+    if (!isAvailable) {
+        throw new Error(`Backend ${backendId} is not available in this environment`);
+    }
+
+    await backend.initialize();
+    activeBackendInstance = backend;
+
+    return backend;
 }
 
+export async function warmupBackend(): Promise<void> {
+    try {
+        const backend = await getActiveBackend();
+        console.log("[VoiceMessageTranscriber] Backend warmed up:", backend.id);
+    } catch (err) {
+        console.warn("[VoiceMessageTranscriber] Backend warmup failed:", err);
+    }
+}
+
+/**
+ * Switch to a different backend at runtime.
+ * Disposes the current backend and clears the cache.
+ */
+export async function switchBackend(backendId: ASRBackendId): Promise<void> {
+    if (currentBackendId === backendId) {
+        return;
+    }
+
+    if (activeBackendInstance) {
+        try {
+            await activeBackendInstance.dispose?.();
+        } catch (err) {
+            console.warn("[VoiceMessageTranscriber] Error disposing backend during switch:", err);
+        }
+        activeBackendInstance = null;
+    }
+
+    settings.store.activeBackend = backendId;
+    currentBackendId = backendId;
+
+    const newBackend = backends[backendId];
+    if (!newBackend) {
+        throw new Error(`Unknown backend: ${backendId}`);
+    }
+
+    await newBackend.initialize();
+    activeBackendInstance = newBackend;
+}
+
+// Transcription Cache & Listeners
+
 export const TranscriptionCache = new Map<string, string>();
+export const TranscriptionInProgress = new Set<string>();
 const TranscriptionListeners = new Set<(messageId: string, text: string | undefined) => void>();
 const activeJobs = new Map<string, () => void>();
+
+export function isTranscriptionInProgress(messageId: string): boolean {
+    return TranscriptionInProgress.has(messageId);
+}
 
 export function addTranscriptionListener(listener: (messageId: string, text: string | undefined) => void) {
     TranscriptionListeners.add(listener);
@@ -64,8 +144,46 @@ export function cancelTranscription(messageId: string) {
         cancel();
         activeJobs.delete(messageId);
     }
+
+    TranscriptionInProgress.delete(messageId);
+
+    // Abort the backend to free resources
+    if (activeBackendInstance) {
+        try {
+            activeBackendInstance.abort();
+        } catch (err) {
+            console.warn("[VoiceMessageTranscriber] Error aborting backend:", err);
+        }
+    }
+
     notifyListeners(messageId, undefined);
 }
+
+// Audio Fetching & Decoding
+
+async function fetchAudioBlob(audioUrl: string, signal: AbortSignal): Promise<Blob> {
+    if (IS_DISCORD_DESKTOP) {
+        const result = await Native.fetchAudioBlob(audioUrl);
+        if (result.error) throw new Error(result.error);
+        if (!result.data) throw new Error("No data returned from native fetch");
+        return new Blob([result.data]);
+    } else {
+        const response = await fetch(audioUrl, { signal });
+        return response.blob();
+    }
+}
+
+async function decodeAudio(audioBlob: Blob): Promise<AudioBuffer> {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const offlineContext = new OfflineAudioContext(1, 9600000, 16000);
+    return offlineContext.decodeAudioData(arrayBuffer);
+}
+
+function getChannelData(audioBuffer: AudioBuffer): Float32Array {
+    return audioBuffer.getChannelData(0);
+}
+
+// Main Transcription Function
 
 export async function transcribeVoiceMessage(messageId: string, audioUrl: string) {
     if (TranscriptionCache.has(messageId)) {
@@ -75,130 +193,98 @@ export async function transcribeVoiceMessage(messageId: string, audioUrl: string
 
     if (activeJobs.has(messageId)) return;
 
+    const abortController = new AbortController();
+
+    const cleanup = () => {
+        abortController.abort();
+        activeJobs.delete(messageId);
+        TranscriptionInProgress.delete(messageId);
+    };
+
+    activeJobs.set(messageId, cleanup);
+    TranscriptionInProgress.add(messageId);
+    notifyListeners(messageId, "");
+
     try {
-        const abortController = new AbortController();
-        let recognizer: any = null;
-
-        const cleanup = () => {
-            abortController.abort();
-            if (recognizer) {
-                recognizer.remove();
-                recognizer = null;
-            }
-            activeJobs.delete(messageId);
-        };
-
-        activeJobs.set(messageId, cleanup);
-
         showToast("Starting transcription...", Toasts.Type.MESSAGE);
 
-        // 1. Fetch Audio
-        let audioBlob: Blob;
-        if (IS_DISCORD_DESKTOP) {
-            const result = await Native.fetchAudioBlob(audioUrl);
-            if (result.error) throw new Error(result.error);
-            if (!result.data) throw new Error("No data returned from native fetch");
-            audioBlob = new Blob([result.data]);
-        } else {
-            const response = await fetch(audioUrl, { signal: abortController.signal });
-            audioBlob = await response.blob();
-        }
+        const backend = await getActiveBackend();
 
-        if (abortController.signal.aborted) return;
-
-        // 2. Decode Audio
-        const audioBuffer = await new OfflineAudioContext(1, 9600000, 16000).decodeAudioData(await audioBlob.arrayBuffer());
-
-        if (abortController.signal.aborted) return;
-
-        // 3. Load Model
-        const model = await getModel();
-
-        if (abortController.signal.aborted) return;
-
-        // 4. Create Recognizer
-        recognizer = new (model as any).KaldiRecognizer(16000);
-
-        // 5. Process Audio via event-based API
-        let onAbort: () => void;
-        const text = await new Promise<string>((resolve, reject) => {
-            const results: string[] = [];
-            let messagesSent = 0;
-            let responsesReceived = 0;
-
-            onAbort = () => {
-                reject(new Error("Transcription cancelled"));
-            };
-            abortController.signal.addEventListener("abort", onAbort);
-
-            const maybeResolve = () => {
-                if (responsesReceived >= messagesSent) {
-                    cleanup();
-                    resolve(results.join(" ").trim());
-                }
-            };
-            const emitUpdate = (partial?: string) => {
-                const currentText = results.join(" ");
-                const fullText = partial ? (currentText + " " + partial).trim() : currentText;
-                if (fullText) notifyListeners(messageId, fullText);
-            };
-
-            recognizer.on("result", (message: any) => {
-                if (message.result?.text) {
-                    results.push(message.result.text);
-                    emitUpdate();
-                }
-                responsesReceived++;
-                maybeResolve();
-            });
-
-            recognizer.on("partialresult", (message: any) => {
-                const partial = message.result?.partial;
-                if (partial) {
-                    emitUpdate(partial);
-                }
-                responsesReceived++;
-                maybeResolve();
-            });
-
-            recognizer.on("error", (message: any) => {
-                reject(new Error(message.error || "Vosk recognition error"));
-            });
-
-            // Feed audio in chunks
-            const channelData = audioBuffer.getChannelData(0);
-            const chunkSize = 8000;
-
-            for (let i = 0; i < channelData.length && !abortController.signal.aborted; i += chunkSize) {
-                const end = Math.min(i + chunkSize, channelData.length);
-                const chunk = channelData.subarray(i, end);
-                recognizer.acceptWaveformFloat(chunk, 16000);
-                messagesSent++;
+        const modelId = settings.store.activeModel;
+        await backend.loadModel(modelId, (progress) => {
+            if (progress.percent < 100) {
+                showToast(`Loading model: ${Math.round(progress.percent)}%`, Toasts.Type.MESSAGE);
             }
-
-            if (abortController.signal.aborted) return;
-
-            recognizer.retrieveFinalResult();
-            messagesSent++;
-        }).finally(() => {
-            if (onAbort) abortController.signal.removeEventListener("abort", onAbort);
         });
 
-        if (text) {
-            notifyListeners(messageId, text);
+        if (abortController.signal.aborted) return;
+
+        const audioBlob = await fetchAudioBlob(audioUrl, abortController.signal);
+
+        if (abortController.signal.aborted) return;
+
+        const audioBuffer = await decodeAudio(audioBlob);
+
+        if (abortController.signal.aborted) return;
+
+        const audioData = getChannelData(audioBuffer);
+
+        const result = await backend.transcribe(audioData, {
+            sampleRate: 16000,
+            language: settings.store.activeBackend === "vosk" ? "en" : (settings.store.language || "auto"),
+        });
+
+        if (abortController.signal.aborted) return;
+
+        TranscriptionInProgress.delete(messageId);
+
+        if (result.text) {
+            notifyListeners(messageId, result.text);
             showToast("Transcription complete", Toasts.Type.SUCCESS);
         } else {
+            notifyListeners(messageId, undefined);
             showToast("Could not transcribe audio", Toasts.Type.FAILURE);
         }
 
     } catch (err: any) {
-        if (err.message === "Transcription cancelled") {
+        TranscriptionInProgress.delete(messageId);
+        if (err.message === "Transcription cancelled" || abortController.signal.aborted) {
             console.log("Transcription cancelled for message", messageId);
+            notifyListeners(messageId, undefined);
             return;
         }
-        console.error("Transcription failed", err);
-        showToast("Transcription failed: " + err, Toasts.Type.FAILURE);
+        notifyListeners(messageId, undefined);
+        showUserError(err, "transcribeVoiceMessage");
     } finally {
         activeJobs.delete(messageId);
     }
 }
+
+// Backward Compatibility Helpers
+
+/** @deprecated Use getActiveBackend() instead */
+export async function getVoskModel() {
+    if (settings.store.activeBackend !== "vosk") {
+        console.warn("[VoiceMessageTranscriber] getVoskModel() called but Vosk is not the active backend");
+    }
+    await voskBackend.loadModel(settings.store.activeModel);
+    return voskBackend;
+}
+
+export async function isBackendAvailable(backendId: ASRBackendId): Promise<boolean> {
+    const backend = backends[backendId];
+    if (!backend) return false;
+    return backend.isAvailable();
+}
+
+export async function getAvailableBackends(): Promise<ASRBackendId[]> {
+    const available: ASRBackendId[] = [];
+    for (const id of Object.keys(backends) as ASRBackendId[]) {
+        if (await backends[id].isAvailable()) {
+            available.push(id);
+        }
+    }
+    return available;
+}
+
+export { voskBackend, onnxWebGPUBackend, onnxCPUBackend };
