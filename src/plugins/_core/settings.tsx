@@ -32,10 +32,10 @@ let LayoutTypes = {
     SECTION: 1,
     SIDEBAR_ITEM: 2,
     PANEL: 3,
-    PANE: 4,
+    CATEGORY: 5,
     CUSTOM: 19,
 };
-waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "PANE", "CUSTOM"], v => LayoutTypes = v);
+waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "CATEGORY", "CUSTOM"], v => LayoutTypes = v);
 
 const FallbackSectionTypes = {
     HEADER: "HEADER",
@@ -60,7 +60,8 @@ interface SettingsLayoutNode {
     useTitle?(): string;
     buildLayout?(): SettingsLayoutNode[];
     icon?(): ReactNode;
-    render?(): ReactNode;
+    Component?: React.ComponentType<any>;
+    useSearchTerms?(): string[];
 }
 
 interface EntryOptions {
@@ -110,7 +111,7 @@ export default definePlugin({
                     }
                 },
                 {
-                    match: /"text-xs\/normal".{0,300}?\[\(0,\i\.jsxs?\)\((.{1,10}),(\{[^{}}]+\{.{0,20}className:\i.\i,.+?\})\)," "/,
+                    match: /"text-xs\/normal"[\s\S]{0,500}?\i\.jsx[s]?\)\((\w{1,20}),\s*(\{[\s\S]{0,300}?className:[^}]+?\})/,
                     replace: (m, component, props) => {
                         props = props.replace(/children:\[.+\]/, "");
                         return `${m},$self.makeInfoElements(${component},${props})`;
@@ -154,11 +155,16 @@ export default definePlugin({
                     useTitle: () => panelTitle,
                     buildLayout: () => [
                         {
-                            key: key + "_pane",
-                            type: LayoutTypes.PANE,
-                            buildLayout: () => [],
-                            render: () => <Component />,
-                            useTitle: () => panelTitle
+                            key: key + "_category",
+                            type: LayoutTypes.CATEGORY,
+                            buildLayout: () => [
+                                {
+                                    type: LayoutTypes.CUSTOM,
+                                    key: key + "_custom",
+                                    Component: Component,
+                                    useSearchTerms: () => [title]
+                                }
+                            ]
                         }
                     ]
                 }
