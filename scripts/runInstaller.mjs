@@ -126,8 +126,8 @@ try {
         stdio: "inherit",
         env: {
             ...process.env,
-            POTATOCORD_USER_DATA_DIR: BASE_DIR,
-            POTATOCORD_DEV_INSTALL: "1"
+            VENCORD_USER_DATA_DIR: BASE_DIR,
+            VENCORD_DEV_INSTALL: "1"
         }
     });
 } catch {
