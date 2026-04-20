@@ -116,6 +116,50 @@ async function ensureBinary() {
 
 const installerBin = await ensureBinary();
 
+// Kill Discord processes and wait for them to actually terminate
+// The installer sometimes races with process shutdown on Windows
+async function killDiscordAndWait() {
+    if (process.platform !== "win32") return;
+    
+    console.log("Ensuring Discord is closed...");
+    
+    // Try to kill Discord processes
+    const discordProcesses = ["Discord.exe", "DiscordPTB.exe", "DiscordCanary.exe", "DiscordDevelopment.exe"];
+    let killed = false;
+    
+    for (const proc of discordProcesses) {
+        try {
+            execSync(`taskkill /F /IM ${proc} 2>nul`, { stdio: "ignore" });
+            killed = true;
+        } catch { }
+    }
+    
+    if (killed) {
+        console.log("Waiting for Discord to fully terminate...");
+        // Wait up to 3 seconds for processes to actually die
+        for (let i = 0; i < 15; i++) {
+            await new Promise(r => setTimeout(r, 200));
+            
+            // Check if any Discord processes are still running
+            let stillRunning = false;
+            for (const proc of discordProcesses) {
+                try {
+                    execSync(`tasklist /FI "IMAGENAME eq ${proc}" 2>nul | findstr /I "${proc}"`, { stdio: "ignore" });
+                    stillRunning = true;
+                    break;
+                } catch { }
+            }
+            
+            if (!stillRunning) {
+                console.log("Discord processes terminated");
+                return;
+            }
+        }
+    }
+}
+
+await killDiscordAndWait();
+
 console.log("Now running Installer...");
 
 const argStart = process.argv.indexOf("--");
