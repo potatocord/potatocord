@@ -21,6 +21,7 @@ export const VENCORD_FILES = [
     IS_DISCORD_DESKTOP ? "preload.js" : "vencordDesktopPreload.js",
     IS_DISCORD_DESKTOP ? "renderer.js" : "vencordDesktopRenderer.js",
     IS_DISCORD_DESKTOP ? "renderer.css" : "vencordDesktopRenderer.css",
+    "potatocord.asar"
 ];
 
 export function serializeErrors(func: (...args: any[]) => any) {

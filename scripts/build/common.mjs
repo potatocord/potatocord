@@ -51,7 +51,7 @@ export const gitHash = process.env.VENCORD_HASH || execSync("git rev-parse --sho
 
 export const banner = {
     js: `
-// Vencord ${gitHash}
+// Potatocord ${gitHash}
 // Standalone: ${IS_STANDALONE}
 // Platform: ${IS_STANDALONE === false ? process.platform : "Universal"}
 // Updater Disabled: ${IS_UPDATER_DISABLED}

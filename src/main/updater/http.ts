@@ -29,6 +29,10 @@ import gitRemote from "~git-remote";
 import { serializeErrors, VENCORD_FILES } from "./common";
 
 const API_BASE = `https://api.github.com/repos/${gitRemote}`;
+const BUILDS_REPO = "potatocord/builds";
+const BUILDS_API_BASE = `https://api.github.com/repos/${BUILDS_REPO}`;
+const BUILDS_RAW_BASE = `https://raw.githubusercontent.com/${BUILDS_REPO}/main`;
+
 let PendingUpdates = [] as [string, string][];
 
 async function githubGet<T = any>(endpoint: string) {
@@ -58,13 +62,37 @@ async function calculateGitChanges() {
 
 async function fetchUpdates() {
     let data;
+    let isFromBuildsRepo = false;
+
     try {
         data = await githubGet("/releases/latest");
     } catch (err: any) {
-        if (err.message && err.message.includes("404")) {
+        try {
             data = await githubGet("/releases/tags/devbuild");
-        } else {
-            throw err;
+        } catch (err2: any) {
+            // Fallback to builds repo if release is 404
+            if (err2.message?.includes("404")) {
+                const commit = await fetchJson<any>(`${BUILDS_API_BASE}/commits/main`, {
+                    headers: { "User-Agent": VENCORD_USER_AGENT }
+                });
+                data = {
+                    name: `DevBuild ${commit.sha.slice(0, 7)}`,
+                    assets: [
+                        { name: "potatocord.asar", browser_download_url: `${BUILDS_RAW_BASE}/potatocord.asar` },
+                        { name: "patcher.js", browser_download_url: `${BUILDS_RAW_BASE}/patcher.js` },
+                        { name: "preload.js", browser_download_url: `${BUILDS_RAW_BASE}/preload.js` },
+                        { name: "renderer.js", browser_download_url: `${BUILDS_RAW_BASE}/renderer.js` },
+                        { name: "renderer.css", browser_download_url: `${BUILDS_RAW_BASE}/renderer.css` },
+                        { name: "vencordDesktopMain.js", browser_download_url: `${BUILDS_RAW_BASE}/vencordDesktopMain.js` },
+                        { name: "vencordDesktopPreload.js", browser_download_url: `${BUILDS_RAW_BASE}/vencordDesktopPreload.js` },
+                        { name: "vencordDesktopRenderer.js", browser_download_url: `${BUILDS_RAW_BASE}/vencordDesktopRenderer.js` },
+                        { name: "vencordDesktopRenderer.css", browser_download_url: `${BUILDS_RAW_BASE}/vencordDesktopRenderer.css` },
+                    ]
+                };
+                isFromBuildsRepo = true;
+            } else {
+                throw err2;
+            }
         }
     }
 
@@ -72,24 +100,54 @@ async function fetchUpdates() {
     if (hash === gitHash)
         return false;
 
-    data.assets.forEach(({ name, browser_download_url }) => {
-        if (VENCORD_FILES.some(s => name.startsWith(s))) {
-            PendingUpdates.push([name, browser_download_url]);
+    const isAsar = __dirname.includes(".asar");
+
+    PendingUpdates = [];
+    data.assets.forEach(({ name, browser_download_url }: any) => {
+        if (isAsar) {
+            if (name === "potatocord.asar") {
+                PendingUpdates.push([name, browser_download_url]);
+            }
+        } else {
+            if (VENCORD_FILES.some(s => name.startsWith(s)) && name !== "potatocord.asar") {
+                PendingUpdates.push([name, browser_download_url]);
+            }
         }
     });
 
-    return true;
+    return PendingUpdates.length > 0;
 }
 
 async function applyUpdates() {
+    const isAsar = __dirname.includes(".asar");
+    const asarFile = isAsar ? __dirname.substring(0, __dirname.lastIndexOf(".asar") + 5) : null;
+
     const fileContents = await Promise.all(PendingUpdates.map(async ([name, url]) => {
         const contents = await fetchBuffer(url);
-        return [join(__dirname, name), contents] as const;
+        let targetPath;
+        if (isAsar && name === "potatocord.asar") {
+            targetPath = asarFile!;
+        } else {
+            targetPath = join(__dirname, name);
+        }
+        return [targetPath, contents] as const;
     }));
 
-    await Promise.all(fileContents.map(async ([filename, contents]) =>
-        writeFile(filename, contents))
-    );
+    const { renameSync, existsSync } = require("fs");
+
+    for (const [filename, contents] of fileContents) {
+        if (process.platform === "win32" && filename === asarFile) {
+            // Rename existing asar before writing new one to avoid lock
+            if (existsSync(filename)) {
+                try {
+                    renameSync(filename, filename + ".old");
+                } catch (e) {
+                    console.error("[Vencord] Failed to rename old asar, update might fail", e);
+                }
+            }
+        }
+        await writeFile(filename, contents);
+    }
 
     PendingUpdates = [];
     return true;
