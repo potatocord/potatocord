@@ -42,7 +42,9 @@
         "gifenc": "github:mattdesl/gifenc#64842fca317b112a8590f8fef2bf3825da8f6fe3",
         "monaco-editor": "^0.55.1",
         "nanoid": "^5.1.6",
-        "virtual-merge": "^1.0.1"
+        "onnxruntime-web": "^1.24.3",
+        "virtual-merge": "^1.0.1",
+        "vosk-browser": "^0.0.8"
     },
     "devDependencies": {
         "@stylistic/eslint-plugin": "^5.10.0",
