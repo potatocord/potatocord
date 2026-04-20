@@ -6,6 +6,7 @@
 
 import { addContextMenuPatch, findGroupChildrenByChildId, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
 import { Menu } from "@webpack/common";
+import definePlugin from "@utils/types";
 
 import { ASRBackend } from "./models/registry";
 import { getDefaultModelForBackend } from "./models/registry";
