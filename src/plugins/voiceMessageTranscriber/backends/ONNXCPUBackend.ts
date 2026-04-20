@@ -748,4 +748,6 @@ export class ONNXCPUBackend implements ASRBackend {
     }
 }
 
+export const onnxCPUBackend = new ONNXCPUBackend();
+
 export default ONNXCPUBackend;
