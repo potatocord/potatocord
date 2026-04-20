@@ -4,7 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import * as ort from 'onnxruntime-web';
+import {
+    ASRModel,
+    getModelById,
+    ModelComponent,
+    PARAKEET_MODELS,
+} from "@plugins/voiceMessageTranscriber/models/registry";
+import { buildHuggingFaceUrl,DownloadProgress, ModelDownloadManager } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
+import * as ort from "onnxruntime-web";
 
 import {
     ASRBackend,
@@ -15,16 +22,7 @@ import {
     TranscriptionOptions,
     TranscriptionResult,
     TranscriptionSegment,
-} from './types';
-
-import {
-    PARAKEET_MODELS,
-    getModelById,
-    ASRModel,
-    ModelComponent,
-} from '../models/registry';
-
-import { ModelDownloadManager, DownloadProgress, buildHuggingFaceUrl } from '../utils/downloadManager';
+} from "./types";
 
 interface AudioConfig {
     sampleRate: number;
@@ -57,8 +55,8 @@ const MAX_TOKENS_PER_CHUNK = 500;
 const BLANK_TOKEN_ID = 0;
 
 export class ONNXCPUBackend implements ASRBackend {
-    id = 'onnx-cpu' as const;
-    name = 'ONNX Runtime (CPU)';
+    id = "onnx-cpu" as const;
+    name = "ONNX Runtime (CPU)";
     supportedModels: ModelConfig[] = PARAKEET_MODELS as unknown as ModelConfig[];
 
     private encoder: ort.InferenceSession | null = null;
@@ -89,7 +87,7 @@ export class ONNXCPUBackend implements ASRBackend {
             throw new Error(`Model ${modelId} not found`);
         }
 
-        if (model.backend !== 'onnx-cpu') {
+        if (model.backend !== "onnx-cpu") {
             throw new Error(`Model ${modelId} does not support onnx-cpu backend`);
         }
 
@@ -105,7 +103,7 @@ export class ONNXCPUBackend implements ASRBackend {
             if (model.components) {
                 for (const component of model.components) {
                     if (this.abortController.signal.aborted) {
-                        throw new Error('Model loading aborted');
+                        throw new Error("Model loading aborted");
                     }
 
                     await this.loadComponent(model, component, onProgress, () => {
@@ -126,7 +124,7 @@ export class ONNXCPUBackend implements ASRBackend {
 
             onProgress?.({
                 percent: 100,
-                message: 'Model loaded successfully',
+                message: "Model loaded successfully",
                 loadedBytes: model.sizeMB * 1024 * 1024,
                 totalBytes: model.sizeMB * 1024 * 1024,
             });
@@ -141,7 +139,7 @@ export class ONNXCPUBackend implements ASRBackend {
         options: TranscriptionOptions
     ): Promise<TranscriptionResult> {
         if (!this.encoder || !this.decoder || !this.joiner) {
-            throw new Error('Model not loaded. Call loadModel() first.');
+            throw new Error("Model not loaded. Call loadModel() first.");
         }
 
         const startTime = performance.now();
@@ -159,7 +157,7 @@ export class ONNXCPUBackend implements ASRBackend {
 
             for (let i = 0; i < numChunks; i++) {
                 if (this.abortController.signal.aborted) {
-                    throw new Error('Transcription aborted');
+                    throw new Error("Transcription aborted");
                 }
 
                 const start = i * chunkSize;
@@ -191,12 +189,12 @@ export class ONNXCPUBackend implements ASRBackend {
                 text,
                 confidence: avgConfidence,
                 segments,
-                language: options.language || 'en',
+                language: options.language || "en",
                 processingTime,
                 isPartial: false,
             };
         } catch (error) {
-            if ((error as Error).message === 'Transcription aborted') {
+            if ((error as Error).message === "Transcription aborted") {
                 throw error;
             }
             throw new Error(`Transcription failed: ${error}`);
@@ -292,8 +290,8 @@ export class ONNXCPUBackend implements ASRBackend {
         }
 
         const sessionOptions: ort.InferenceSession.SessionOptions = {
-            executionProviders: ['wasm'],
-            graphOptimizationLevel: 'all',
+            executionProviders: ["wasm"],
+            graphOptimizationLevel: "all",
             enableCpuMemArena: true,
         };
 
@@ -303,13 +301,13 @@ export class ONNXCPUBackend implements ASRBackend {
         );
 
         switch (component.type) {
-            case 'encoder':
+            case "encoder":
                 this.encoder = session;
                 break;
-            case 'decoder':
+            case "decoder":
                 this.decoder = session;
                 break;
-            case 'joiner':
+            case "joiner":
                 this.joiner = session;
                 break;
         }
@@ -322,14 +320,14 @@ export class ONNXCPUBackend implements ASRBackend {
         const vocab: Record<string, number> = {};
         const reverseVocab: Record<number, string> = {};
 
-        vocab['<blank>'] = BLANK_TOKEN_ID;
-        reverseVocab[BLANK_TOKEN_ID] = '<blank>';
+        vocab["<blank>"] = BLANK_TOKEN_ID;
+        reverseVocab[BLANK_TOKEN_ID] = "<blank>";
 
-        vocab['<unk>'] = 1;
-        reverseVocab[1] = '<unk>';
+        vocab["<unk>"] = 1;
+        reverseVocab[1] = "<unk>";
 
-        vocab['<space>'] = 2;
-        reverseVocab[2] = ' ';
+        vocab["<space>"] = 2;
+        reverseVocab[2] = " ";
 
         let id = 3;
         for (const char of chars) {
@@ -367,7 +365,7 @@ export class ONNXCPUBackend implements ASRBackend {
         const logMel = this.applyLogAndNormalize(melSpec);
 
         const dims = [1, nMels, logMel.length / nMels];
-        return new ort.Tensor('float32', logMel, dims);
+        return new ort.Tensor("float32", logMel, dims);
     }
 
     private resampleAudio(audio: Float32Array, fromRate: number, toRate: number): Float32Array {
@@ -534,7 +532,7 @@ export class ONNXCPUBackend implements ASRBackend {
 
     private async runEncoder(melFeatures: ort.Tensor): Promise<ort.Tensor> {
         if (!this.encoder) {
-            throw new Error('Encoder not loaded');
+            throw new Error("Encoder not loaded");
         }
 
         const feeds: Record<string, ort.Tensor> = {
@@ -551,7 +549,7 @@ export class ONNXCPUBackend implements ASRBackend {
         confidence: number;
     }> {
         if (!this.decoder || !this.joiner) {
-            throw new Error('Decoder or joiner not loaded');
+            throw new Error("Decoder or joiner not loaded");
         }
 
         const tokens: number[] = [];
@@ -567,11 +565,11 @@ export class ONNXCPUBackend implements ASRBackend {
 
         const segments: TranscriptionSegment[] = [];
         let segmentStartTime = 0;
-        let segmentText = '';
+        let segmentText = "";
 
         while (encoderFrameIdx < encoderFrames && tokenCount < MAX_TOKENS_PER_CHUNK) {
             if (this.abortController?.signal.aborted) {
-                throw new Error('Transcription aborted');
+                throw new Error("Transcription aborted");
             }
 
             const encoderFrame = this.getEncoderFrame(encoderOutput, encoderFrameIdx);
@@ -602,7 +600,7 @@ export class ONNXCPUBackend implements ASRBackend {
                 encoderFrameIdx += Math.max(1, predictedDuration + 1);
 
                 const char = this.tokenToChar(predictedToken);
-                if (char === ' ' || char === '.' || char === '!' || char === '?') {
+                if (char === " " || char === "." || char === "!" || char === "?") {
                     if (segmentText) {
                         const endTime = (encoderFrameIdx * DEFAULT_AUDIO_CONFIG.hopLength) / 16000;
                         segments.push({
@@ -612,7 +610,7 @@ export class ONNXCPUBackend implements ASRBackend {
                             text: segmentText + char,
                             confidence: tokenScore,
                         });
-                        segmentText = '';
+                        segmentText = "";
                         segmentStartTime = endTime;
                     }
                 } else {
@@ -640,7 +638,7 @@ export class ONNXCPUBackend implements ASRBackend {
     }
 
     private getEncoderFrame(encoderOutput: ort.Tensor, frameIdx: number): ort.Tensor {
-        const dims = encoderOutput.dims;
+        const { dims } = encoderOutput;
         const batch = dims[0];
         const frames = dims[1];
         const hidden = dims[2];
@@ -650,7 +648,7 @@ export class ONNXCPUBackend implements ASRBackend {
         const startIdx = frameIdx * frameSize;
 
         const frameData = data.slice(startIdx, startIdx + frameSize);
-        return new ort.Tensor('float32', frameData, [batch, hidden]);
+        return new ort.Tensor("float32", frameData, [batch, hidden]);
     }
 
     private async runDecoder(
@@ -658,11 +656,11 @@ export class ONNXCPUBackend implements ASRBackend {
         state: Float32Array
     ): Promise<{ tokenLogits: Float32Array; durationLogits: Float32Array; newState: Float32Array }> {
         if (!this.decoder) {
-            throw new Error('Decoder not loaded');
+            throw new Error("Decoder not loaded");
         }
 
-        const tokenTensor = new ort.Tensor('int64', new BigInt64Array([BigInt(prevToken)]), [1]);
-        const stateTensor = new ort.Tensor('float32', state, [1, state.length]);
+        const tokenTensor = new ort.Tensor("int64", new BigInt64Array([BigInt(prevToken)]), [1]);
+        const stateTensor = new ort.Tensor("float32", state, [1, state.length]);
 
         const feeds: Record<string, ort.Tensor> = {
             input: tokenTensor,
@@ -680,10 +678,10 @@ export class ONNXCPUBackend implements ASRBackend {
 
     private async runJoiner(encoderOut: ort.Tensor, decoderOut: Float32Array): Promise<Float32Array> {
         if (!this.joiner) {
-            throw new Error('Joiner not loaded');
+            throw new Error("Joiner not loaded");
         }
 
-        const decoderTensor = new ort.Tensor('float32', decoderOut, [1, decoderOut.length]);
+        const decoderTensor = new ort.Tensor("float32", decoderOut, [1, decoderOut.length]);
 
         const feeds: Record<string, ort.Tensor> = {
             encoder_out: encoderOut,
@@ -719,12 +717,12 @@ export class ONNXCPUBackend implements ASRBackend {
 
     private tokenToChar(tokenId: number): string {
         if (!this.tokenizerConfig) {
-            return '';
+            return "";
         }
 
         const char = this.tokenizerConfig.reverseVocab[tokenId];
-        if (!char || char === '<blank>' || char === '<unk>') {
-            return '';
+        if (!char || char === "<blank>" || char === "<unk>") {
+            return "";
         }
 
         return char;
@@ -732,7 +730,7 @@ export class ONNXCPUBackend implements ASRBackend {
 
     private tokensToText(tokens: number[]): string {
         if (!this.tokenizerConfig) {
-            return '';
+            return "";
         }
 
         const chars: string[] = [];
@@ -744,7 +742,7 @@ export class ONNXCPUBackend implements ASRBackend {
             }
         }
 
-        return chars.join('').trim();
+        return chars.join("").trim();
     }
 }
 

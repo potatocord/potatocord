@@ -55,7 +55,7 @@ export async function migrateSettings(): Promise<void> {
         }
 
         const rawSettings = await DataStore.get(LEGACY_SETTINGS_KEY);
-        
+
         if (!rawSettings) {
             logger.info("No existing settings found, marking as migrated (fresh install)");
             DataStore.set(MIGRATION_KEY, true);
@@ -132,7 +132,7 @@ export async function getMigrationStatus(): Promise<{
         const hasMigrated = !!(await DataStore.get(MIGRATION_KEY));
         const hasBackup = !!(await DataStore.get(`${LEGACY_SETTINGS_KEY}.v1-backup`));
         const rawSettings = await DataStore.get(LEGACY_SETTINGS_KEY);
-        
+
         let settingsFormat: "v1" | "v2" | "unknown" = "unknown";
         if (rawSettings) {
             settingsFormat = isLegacyV1Format(rawSettings) ? "v1" : "v2";

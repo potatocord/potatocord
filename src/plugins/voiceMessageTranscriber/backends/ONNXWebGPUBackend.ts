@@ -14,6 +14,17 @@
  */
 
 import {
+    ASRModel,
+    getHuggingFaceUrl,
+    getModelById,
+    ModelComponent,
+    MOONSHINE_MODELS,
+    WHISPER_MODELS,
+} from "@plugins/voiceMessageTranscriber/models/registry";
+import { defaultDownloadManager,ModelDownloadManager } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
+import { detectWebGPU, WebGPUInfo } from "@plugins/voiceMessageTranscriber/utils/hardwareDetect";
+
+import {
     ASRBackend,
     DeviceType,
     ModelConfig,
@@ -22,22 +33,12 @@ import {
     TranscriptionOptions,
     TranscriptionResult,
     TranscriptionSegment,
-} from './types';
-import {
-    MOONSHINE_MODELS,
-    WHISPER_MODELS,
-    ASRModel,
-    ModelComponent,
-    getModelById,
-    getHuggingFaceUrl,
-} from '../models/registry';
-import { detectWebGPU, WebGPUInfo } from '../utils/hardwareDetect';
-import { ModelDownloadManager, defaultDownloadManager } from '../utils/downloadManager';
+} from "./types";
 
 // ONNX Runtime types (dynamic import avoids CSP issues)
-type OrtModule = typeof import('onnxruntime-web');
-type OrtSession = import('onnxruntime-web').InferenceSession;
-type OrtTensor = import('onnxruntime-web').Tensor;
+type OrtModule = typeof import("onnxruntime-web");
+type OrtSession = import("onnxruntime-web").InferenceSession;
+type OrtTensor = import("onnxruntime-web").Tensor;
 
 /** Execution provider configuration */
 interface ExecutionProviderConfig {
@@ -73,8 +74,8 @@ const WHISPER_TOKEN_IDS = {
  * - Whisper: encoder + decoder + config components
  */
 export class ONNXWebGPUBackend implements ASRBackend {
-    readonly id = 'onnx-webgpu';
-    readonly name = 'ONNX Runtime (WebGPU)';
+    readonly id = "onnx-webgpu";
+    readonly name = "ONNX Runtime (WebGPU)";
     readonly supportedModels: ModelConfig[];
 
     private ort: OrtModule | null = null;
@@ -83,7 +84,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
     private abortController: AbortController | null = null;
     private downloadManager: ModelDownloadManager;
     private webGPUInfo: WebGPUInfo | null = null;
-    private executionProvider: string = 'wasm';
+    private executionProvider: string = "wasm";
 
     constructor() {
         // Combine Moonshine and Whisper models
@@ -102,13 +103,13 @@ export class ONNXWebGPUBackend implements ASRBackend {
             name: model.name,
             backend: model.backend,
             size: model.sizeMB * 1024 * 1024, // Convert MB to bytes
-            hfUrl: model.hfId ? `https://huggingface.co/${model.hfId}` : '',
+            hfUrl: model.hfId ? `https://huggingface.co/${model.hfId}` : "",
             languages: model.languages,
             isMultiComponent: !!model.components && model.components.length > 1,
             components: model.components?.map(comp => ({
                 id: comp.type,
                 filename: comp.filename,
-                url: model.hfId ? getHuggingFaceUrl(model, comp) : '',
+                url: model.hfId ? getHuggingFaceUrl(model, comp) : "",
                 checksum: comp.sha256,
                 size: comp.sizeMB * 1024 * 1024,
                 quantization: this.convertQuantization(model.defaultQuantization),
@@ -125,12 +126,12 @@ export class ONNXWebGPUBackend implements ASRBackend {
      */
     private convertQuantization(quant: string): Quantization {
         switch (quant) {
-            case 'fp32': return Quantization.FP32;
-            case 'fp16': return Quantization.FP16;
-            case 'int8': return Quantization.INT8;
-            case 'q4': return Quantization.Q4;
-            case 'q5': return Quantization.Q5;
-            case 'q8': return Quantization.Q8;
+            case "fp32": return Quantization.FP32;
+            case "fp16": return Quantization.FP16;
+            case "int8": return Quantization.INT8;
+            case "q4": return Quantization.Q4;
+            case "q5": return Quantization.Q5;
+            case "q8": return Quantization.Q8;
             default: return Quantization.FP32;
         }
     }
@@ -139,29 +140,29 @@ export class ONNXWebGPUBackend implements ASRBackend {
      * Initialize the backend - detect WebGPU and load ONNX Runtime
      */
     async initialize(): Promise<void> {
-        console.log('[ONNXWebGPUBackend] Initializing...');
+        console.log("[ONNXWebGPUBackend] Initializing...");
 
         // Check WebGPU availability
         this.webGPUInfo = await detectWebGPU();
 
         if (this.webGPUInfo?.available) {
-            this.executionProvider = 'webgpu';
-            console.log('[ONNXWebGPUBackend] WebGPU available:', {
+            this.executionProvider = "webgpu";
+            console.log("[ONNXWebGPUBackend] WebGPU available:", {
                 vendor: this.webGPUInfo.adapter?.vendor,
                 device: this.webGPUInfo.adapter?.device,
             });
         } else {
-            this.executionProvider = 'wasm';
-            console.log('[ONNXWebGPUBackend] WebGPU not available, using WASM fallback');
+            this.executionProvider = "wasm";
+            console.log("[ONNXWebGPUBackend] WebGPU not available, using WASM fallback");
         }
 
         // Dynamic import of ONNX Runtime Web to avoid CSP issues
         try {
-            this.ort = await import('onnxruntime-web');
-            console.log('[ONNXWebGPUBackend] ONNX Runtime Web loaded');
+            this.ort = await import("onnxruntime-web");
+            console.log("[ONNXWebGPUBackend] ONNX Runtime Web loaded");
         } catch (error) {
-            console.error('[ONNXWebGPUBackend] Failed to load ONNX Runtime Web:', error);
-            throw new Error('Failed to load ONNX Runtime Web');
+            console.error("[ONNXWebGPUBackend] Failed to load ONNX Runtime Web:", error);
+            throw new Error("Failed to load ONNX Runtime Web");
         }
 
         // Warm up the runtime
@@ -179,7 +180,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         }
 
         // Check WebGPU requirement
-        if (model.requiresWebGPU && this.executionProvider !== 'webgpu') {
+        if (model.requiresWebGPU && this.executionProvider !== "webgpu") {
             throw new Error(`Model ${modelId} requires WebGPU but it's not available`);
         }
 
@@ -193,19 +194,19 @@ export class ONNXWebGPUBackend implements ASRBackend {
         }
 
         const sessions: ModelSessions = {};
-        const totalComponents = model.components.filter(c => c.type !== 'tokenizer' && c.type !== 'config').length;
+        const totalComponents = model.components.filter(c => c.type !== "tokenizer" && c.type !== "config").length;
         let loadedComponents = 0;
 
         // Load each component
         for (const component of model.components) {
             if (this.abortController.signal.aborted) {
-                throw new Error('Model loading aborted');
+                throw new Error("Model loading aborted");
             }
 
             // Skip non-ONNX components (tokenizer, config are loaded as JSON)
-            if (component.type === 'tokenizer' || component.type === 'config') {
+            if (component.type === "tokenizer" || component.type === "config") {
                 const componentData = await this.loadComponentData(model, component, onProgress);
-                if (component.type === 'tokenizer') {
+                if (component.type === "tokenizer") {
                     sessions.tokenizer = componentData;
                 } else {
                     sessions.config = componentData;
@@ -225,13 +226,13 @@ export class ONNXWebGPUBackend implements ASRBackend {
             const session = await this.loadONNXSession(model, component, onProgress);
 
             switch (component.type) {
-                case 'encoder':
+                case "encoder":
                     sessions.encoder = session;
                     break;
-                case 'decoder':
+                case "decoder":
                     sessions.decoder = session;
                     break;
-                case 'joiner':
+                case "joiner":
                     sessions.joiner = session;
                     break;
             }
@@ -254,7 +255,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
 
         onProgress?.({
             percent: 100,
-            message: 'Model loaded',
+            message: "Model loaded",
             loadedBytes: totalComponents,
             totalBytes: totalComponents,
         });
@@ -269,7 +270,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         onProgress?: ProgressCallback
     ): Promise<unknown> {
         const componentId = `${model.id}-${component.type}`;
-        const url = model.hfId ? getHuggingFaceUrl(model, component) : '';
+        const url = model.hfId ? getHuggingFaceUrl(model, component) : "";
 
         if (!url) {
             throw new Error(`No URL for component ${component.type} of model ${model.id}`);
@@ -289,7 +290,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
             component.sha256,
             {
                 onProgress: onProgress
-                    ? (progress) => onProgress({
+                    ? progress => onProgress({
                           percent: progress.percentage,
                           message: `Downloading ${component.type}...`,
                           loadedBytes: progress.loaded,
@@ -313,11 +314,11 @@ export class ONNXWebGPUBackend implements ASRBackend {
         onProgress?: ProgressCallback
     ): Promise<OrtSession> {
         if (!this.ort) {
-            throw new Error('ONNX Runtime not initialized');
+            throw new Error("ONNX Runtime not initialized");
         }
 
         const componentId = `${model.id}-${component.type}`;
-        const url = model.hfId ? getHuggingFaceUrl(model, component) : '';
+        const url = model.hfId ? getHuggingFaceUrl(model, component) : "";
 
         if (!url) {
             throw new Error(`No URL for component ${component.type} of model ${model.id}`);
@@ -334,7 +335,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
                 component.sha256,
                 {
                     onProgress: onProgress
-                        ? (progress) => onProgress({
+                        ? progress => onProgress({
                               percent: progress.percentage,
                               message: `Downloading ${component.type}...`,
                               loadedBytes: progress.loaded,
@@ -349,20 +350,20 @@ export class ONNXWebGPUBackend implements ASRBackend {
         // Configure execution providers
         const executionProviders: ExecutionProviderConfig[] = [];
 
-        if (this.executionProvider === 'webgpu') {
+        if (this.executionProvider === "webgpu") {
             executionProviders.push({
-                name: 'webgpu',
-                deviceType: 'gpu',
+                name: "webgpu",
+                deviceType: "gpu",
             });
         }
 
         // Always add WASM as fallback
-        executionProviders.push({ name: 'wasm' });
+        executionProviders.push({ name: "wasm" });
 
         // Create session
         const session = await this.ort.InferenceSession.create(modelData, {
             executionProviders: executionProviders as unknown as string[],
-            graphOptimizationLevel: 'all',
+            graphOptimizationLevel: "all",
         });
 
         return session;
@@ -377,11 +378,11 @@ export class ONNXWebGPUBackend implements ASRBackend {
         options: TranscriptionOptions = {}
     ): Promise<TranscriptionResult> {
         if (!this.currentModelId) {
-            throw new Error('No model loaded');
+            throw new Error("No model loaded");
         }
 
         if (!this.ort) {
-            throw new Error('ONNX Runtime not initialized');
+            throw new Error("ONNX Runtime not initialized");
         }
 
         const sessions = this.sessions.get(this.currentModelId);
@@ -402,10 +403,10 @@ export class ONNXWebGPUBackend implements ASRBackend {
             let result: TranscriptionResult;
 
             switch (model.family) {
-                case 'moonshine':
+                case "moonshine":
                     result = await this.transcribeMoonshine(audioData, sessions, options);
                     break;
-                case 'whisper':
+                case "whisper":
                     result = await this.transcribeWhisper(audioData, sessions, options);
                     break;
                 default:
@@ -418,7 +419,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
             return result;
         } catch (error) {
             if (this.abortController.signal.aborted) {
-                throw new Error('Transcription aborted');
+                throw new Error("Transcription aborted");
             }
             throw error;
         }
@@ -434,11 +435,11 @@ export class ONNXWebGPUBackend implements ASRBackend {
         options: TranscriptionOptions
     ): Promise<TranscriptionResult> {
         if (!sessions.encoder || !sessions.decoder) {
-            throw new Error('Moonshine model missing encoder or decoder');
+            throw new Error("Moonshine model missing encoder or decoder");
         }
 
         if (!this.ort) {
-            throw new Error('ONNX Runtime not initialized');
+            throw new Error("ONNX Runtime not initialized");
         }
 
         // Preprocess audio - normalize and reshape for Moonshine
@@ -446,7 +447,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         const processedAudio = this.preprocessAudio(audioData, options.sampleRate || 16000);
 
         // Create input tensor
-        const audioTensor = new this.ort.Tensor('float32', processedAudio, [1, processedAudio.length]);
+        const audioTensor = new this.ort.Tensor("float32", processedAudio, [1, processedAudio.length]);
 
         // Run encoder
         const encoderFeeds = { audio: audioTensor };
@@ -454,7 +455,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         const encoded = encoderResults.encoded || encoderResults.last_hidden_state;
 
         if (!encoded) {
-            throw new Error('Encoder output not found');
+            throw new Error("Encoder output not found");
         }
 
         // Greedy decoding (simplified for v1)
@@ -468,7 +469,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
             }
 
             // Create decoder input
-            const tokenTensor = new this.ort.Tensor('int64', BigInt64Array.from([BigInt(prevToken)]), [1, 1]);
+            const tokenTensor = new this.ort.Tensor("int64", BigInt64Array.from([BigInt(prevToken)]), [1, 1]);
             const decoderFeeds: Record<string, OrtTensor> = {
                 tokens: tokenTensor,
                 encoded: encoded as OrtTensor,
@@ -506,7 +507,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
             text: text.trim(),
             confidence: 0.9,
             segments,
-            language: options.language || 'en',
+            language: options.language || "en",
             processingTime: 0, // Will be set by caller
             isPartial: false,
         };
@@ -522,18 +523,18 @@ export class ONNXWebGPUBackend implements ASRBackend {
         options: TranscriptionOptions
     ): Promise<TranscriptionResult> {
         if (!sessions.encoder || !sessions.decoder) {
-            throw new Error('Whisper model missing encoder or decoder');
+            throw new Error("Whisper model missing encoder or decoder");
         }
 
         if (!this.ort) {
-            throw new Error('ONNX Runtime not initialized');
+            throw new Error("ONNX Runtime not initialized");
         }
 
         // Compute mel spectrogram for Whisper
         const melSpectrogram = this.computeMelSpectrogram(audioData, options.sampleRate || 16000);
 
         // Create input tensor [batch, n_mels, frames]
-        const inputTensor = new this.ort.Tensor('float32', melSpectrogram, [1, 80, melSpectrogram.length / 80]);
+        const inputTensor = new this.ort.Tensor("float32", melSpectrogram, [1, 80, melSpectrogram.length / 80]);
 
         // Run encoder
         const encoderFeeds = { input_features: inputTensor };
@@ -541,14 +542,14 @@ export class ONNXWebGPUBackend implements ASRBackend {
         const encoderHiddenStates = encoderResults.encoder_hidden_states || Object.values(encoderResults)[0];
 
         if (!encoderHiddenStates) {
-            throw new Error('Encoder output not found');
+            throw new Error("Encoder output not found");
         }
 
         // Prepare initial tokens for decoder
-        const language = options.language || 'en';
+        const language = options.language || "en";
         const langToken = this.getWhisperLanguageToken(language);
 
-        let tokens: number[] = [
+        const tokens: number[] = [
             WHISPER_TOKEN_IDS.START_OF_TRANSCRIPT,
             langToken,
             WHISPER_TOKEN_IDS.TRANSCRIBE,
@@ -560,7 +561,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
 
         // Greedy decoding
         const maxLength = 448; // Whisper max tokens
-        let textTokens: number[] = [];
+        const textTokens: number[] = [];
 
         for (let i = 0; i < maxLength && tokens.length < maxLength; i++) {
             if (this.abortController?.signal.aborted) {
@@ -569,7 +570,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
 
             // Create decoder input tensor
             const tokenArray = new Int32Array(tokens);
-            const tokenTensor = new this.ort.Tensor('int32', tokenArray, [1, tokens.length]);
+            const tokenTensor = new this.ort.Tensor("int32", tokenArray, [1, tokens.length]);
 
             const decoderFeeds: Record<string, OrtTensor> = {
                 input_ids: tokenTensor,
@@ -629,105 +630,105 @@ export class ONNXWebGPUBackend implements ASRBackend {
     private getWhisperLanguageToken(language: string): number {
         // Whisper language tokens start at 50259
         const languageCodes: Record<string, number> = {
-            'en': 50259,
-            'zh': 50260,
-            'de': 50261,
-            'es': 50262,
-            'ru': 50263,
-            'ko': 50264,
-            'fr': 50265,
-            'ja': 50266,
-            'pt': 50267,
-            'tr': 50268,
-            'pl': 50269,
-            'ca': 50270,
-            'nl': 50271,
-            'ar': 50272,
-            'sv': 50273,
-            'it': 50274,
-            'id': 50275,
-            'hi': 50276,
-            'fi': 50277,
-            'vi': 50278,
-            'he': 50279,
-            'uk': 50280,
-            'el': 50281,
-            'ms': 50282,
-            'cs': 50283,
-            'ro': 50284,
-            'da': 50285,
-            'hu': 50286,
-            'ta': 50287,
-            'no': 50288,
-            'th': 50289,
-            'ur': 50290,
-            'hr': 50291,
-            'bg': 50292,
-            'lt': 50293,
-            'la': 50294,
-            'mi': 50295,
-            'ml': 50296,
-            'cy': 50297,
-            'sk': 50298,
-            'te': 50299,
-            'fa': 50300,
-            'lv': 50301,
-            'bn': 50302,
-            'sr': 50303,
-            'az': 50304,
-            'sl': 50305,
-            'kn': 50306,
-            'et': 50307,
-            'mk': 50308,
-            'br': 50309,
-            'eu': 50310,
-            'is': 50311,
-            'hy': 50312,
-            'ne': 50313,
-            'mn': 50314,
-            'bs': 50315,
-            'kk': 50316,
-            'sq': 50317,
-            'sw': 50318,
-            'gl': 50319,
-            'mr': 50320,
-            'pa': 50321,
-            'si': 50322,
-            'km': 50323,
-            'sn': 50324,
-            'yo': 50325,
-            'so': 50326,
-            'af': 50327,
-            'oc': 50328,
-            'ka': 50329,
-            'be': 50330,
-            'tg': 50331,
-            'sd': 50332,
-            'gu': 50333,
-            'am': 50334,
-            'yi': 50335,
-            'lo': 50336,
-            'uz': 50337,
-            'fo': 50338,
-            'ht': 50339,
-            'ps': 50340,
-            'tk': 50341,
-            'nn': 50342,
-            'mt': 50343,
-            'sa': 50344,
-            'lb': 50345,
-            'my': 50346,
-            'bo': 50347,
-            'tl': 50348,
-            'mg': 50349,
-            'as': 50350,
-            'tt': 50351,
-            'haw': 50352,
-            'ln': 50353,
-            'ha': 50354,
-            'ba': 50355,
-            'jw': 50356,
-            'su': 50357,
+            "en": 50259,
+            "zh": 50260,
+            "de": 50261,
+            "es": 50262,
+            "ru": 50263,
+            "ko": 50264,
+            "fr": 50265,
+            "ja": 50266,
+            "pt": 50267,
+            "tr": 50268,
+            "pl": 50269,
+            "ca": 50270,
+            "nl": 50271,
+            "ar": 50272,
+            "sv": 50273,
+            "it": 50274,
+            "id": 50275,
+            "hi": 50276,
+            "fi": 50277,
+            "vi": 50278,
+            "he": 50279,
+            "uk": 50280,
+            "el": 50281,
+            "ms": 50282,
+            "cs": 50283,
+            "ro": 50284,
+            "da": 50285,
+            "hu": 50286,
+            "ta": 50287,
+            "no": 50288,
+            "th": 50289,
+            "ur": 50290,
+            "hr": 50291,
+            "bg": 50292,
+            "lt": 50293,
+            "la": 50294,
+            "mi": 50295,
+            "ml": 50296,
+            "cy": 50297,
+            "sk": 50298,
+            "te": 50299,
+            "fa": 50300,
+            "lv": 50301,
+            "bn": 50302,
+            "sr": 50303,
+            "az": 50304,
+            "sl": 50305,
+            "kn": 50306,
+            "et": 50307,
+            "mk": 50308,
+            "br": 50309,
+            "eu": 50310,
+            "is": 50311,
+            "hy": 50312,
+            "ne": 50313,
+            "mn": 50314,
+            "bs": 50315,
+            "kk": 50316,
+            "sq": 50317,
+            "sw": 50318,
+            "gl": 50319,
+            "mr": 50320,
+            "pa": 50321,
+            "si": 50322,
+            "km": 50323,
+            "sn": 50324,
+            "yo": 50325,
+            "so": 50326,
+            "af": 50327,
+            "oc": 50328,
+            "ka": 50329,
+            "be": 50330,
+            "tg": 50331,
+            "sd": 50332,
+            "gu": 50333,
+            "am": 50334,
+            "yi": 50335,
+            "lo": 50336,
+            "uz": 50337,
+            "fo": 50338,
+            "ht": 50339,
+            "ps": 50340,
+            "tk": 50341,
+            "nn": 50342,
+            "mt": 50343,
+            "sa": 50344,
+            "lb": 50345,
+            "my": 50346,
+            "bo": 50347,
+            "tl": 50348,
+            "mg": 50349,
+            "as": 50350,
+            "tt": 50351,
+            "haw": 50352,
+            "ln": 50353,
+            "ha": 50354,
+            "ba": 50355,
+            "jw": 50356,
+            "su": 50357,
         };
 
         return languageCodes[language] || 50259; // Default to English
@@ -816,7 +817,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
      * Abort any ongoing operation
      */
     abort(): void {
-        console.log('[ONNXWebGPUBackend] Aborting current operation');
+        console.log("[ONNXWebGPUBackend] Aborting current operation");
         this.abortController?.abort();
     }
 
@@ -824,7 +825,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
      * Dispose of all resources
      */
     async dispose(): Promise<void> {
-        console.log('[ONNXWebGPUBackend] Disposing resources...');
+        console.log("[ONNXWebGPUBackend] Disposing resources...");
 
         // Abort any ongoing operation
         this.abort();
@@ -848,7 +849,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         this.currentModelId = null;
         this.ort = null;
 
-        console.log('[ONNXWebGPUBackend] Resources disposed');
+        console.log("[ONNXWebGPUBackend] Resources disposed");
     }
 
     /**
@@ -879,7 +880,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
         // ONNX Runtime Web is always available (has WASM fallback)
         // Just need to verify we can load the module
         try {
-            const ort = await import('onnxruntime-web');
+            const ort = await import("onnxruntime-web");
             return !!ort;
         } catch {
             return false;
@@ -897,7 +898,7 @@ export class ONNXWebGPUBackend implements ASRBackend {
      * Check if currently using WebGPU
      */
     isUsingWebGPU(): boolean {
-        return this.executionProvider === 'webgpu';
+        return this.executionProvider === "webgpu";
     }
 }
 

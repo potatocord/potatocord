@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import React from "react";
-import { Button, Forms, showToast, Toasts } from "@webpack/common";
-import { DownloadError, ModelDownloadManager } from "../utils/downloadManager";
-import { ASRModel, getHuggingFaceUrl, ModelComponent } from "../models/registry";
+import { ASRModel, getHuggingFaceUrl } from "@plugins/voiceMessageTranscriber/models/registry";
+import { DownloadError, ModelDownloadManager } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
+import { Button, Forms, React,showToast, Toasts } from "@webpack/common";
 
 const { FormText } = Forms;
 
@@ -204,7 +203,7 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
             // Download each component sequentially
             const components = model.components || [];
             let totalBytesDownloaded = 0;
-            let totalBytes = components.reduce((sum, c) => sum + c.sizeMB * 1024 * 1024, 0);
+            const totalBytes = components.reduce((sum, c) => sum + c.sizeMB * 1024 * 1024, 0);
 
             for (const component of components) {
                 if (controller.signal.aborted) {
@@ -228,7 +227,7 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
                     component.sha256,
                     {
                         signal: controller.signal,
-                        onProgress: (progress) => {
+                        onProgress: progress => {
                             // Calculate overall progress
                             const componentProgress = progress.loaded;
                             const componentTotal = progress.total;
@@ -236,7 +235,7 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
                             const overallProgress = (completedBytes / totalBytes) * 100;
 
                             // Calculate speed and ETA
-                            const speed = progress.speed;
+                            const { speed } = progress;
                             const remainingBytes = totalBytes - completedBytes;
                             const eta = speed > 0 ? remainingBytes / speed : 0;
 
@@ -314,7 +313,7 @@ export function ModelDownload({ model, onDownloadComplete, onDownloadError }: Mo
                 // Small delay to ensure state update before restarting
                 setTimeout(startDownload, 100);
             })
-            .catch((err) => {
+            .catch(err => {
                 console.error("Failed to clear partial downloads:", err);
                 setState({ status: "idle" });
                 setTimeout(startDownload, 100);

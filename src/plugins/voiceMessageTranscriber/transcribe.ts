@@ -7,13 +7,13 @@
 import { PluginNative } from "@utils/types";
 import { showToast, Toasts } from "@webpack/common";
 
-import { settings } from "./settings";
-import { showUserError } from "./utils/errorTranslator";
+import { onnxCPUBackend } from "./backends/ONNXCPUBackend";
+import { onnxWebGPUBackend } from "./backends/ONNXWebGPUBackend";
 import { ASRBackend } from "./backends/types";
 import { voskBackend } from "./backends/VoskBackend";
-import { onnxWebGPUBackend } from "./backends/ONNXWebGPUBackend";
-import { onnxCPUBackend } from "./backends/ONNXCPUBackend";
 import { ASRBackend as ASRBackendId } from "./models/registry";
+import { settings } from "./settings";
+import { showUserError } from "./utils/errorTranslator";
 
 const Native = VencordNative.pluginHelpers.VoiceMessageTranscriber as PluginNative<typeof import("./native")>;
 
@@ -211,7 +211,7 @@ export async function transcribeVoiceMessage(messageId: string, audioUrl: string
         const backend = await getActiveBackend();
 
         const modelId = settings.store.activeModel;
-        await backend.loadModel(modelId, (progress) => {
+        await backend.loadModel(modelId, progress => {
             if (progress.percent < 100) {
                 showToast(`Loading model: ${Math.round(progress.percent)}%`, Toasts.Type.MESSAGE);
             }
@@ -287,4 +287,4 @@ export async function getAvailableBackends(): Promise<ASRBackendId[]> {
     return available;
 }
 
-export { voskBackend, onnxWebGPUBackend, onnxCPUBackend };
+export { onnxCPUBackend,onnxWebGPUBackend, voskBackend };

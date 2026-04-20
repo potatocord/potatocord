@@ -6,12 +6,12 @@
 
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
-import React, { useEffect, useState } from "react";
-import { Button, Forms, Select } from "@webpack/common";
+import { Button, Forms, React,Select } from "@webpack/common";
+const { useEffect, useState } = React;
 
-import { ASRBackend, ASRModel, AVAILABLE_MODELS, getDefaultModelForBackend, MODELS_BY_BACKEND } from "../models/registry";
-import { defaultDownloadManager, DownloadProgress } from "../utils/downloadManager";
-import { detectWebGPU, getStorageQuota } from "../utils/hardwareDetect";
+import { ASRBackend, ASRModel, AVAILABLE_MODELS, getDefaultModelForBackend, MODEL_CHECKSUMS,MODELS_BY_BACKEND } from "@plugins/voiceMessageTranscriber/models/registry";
+import { defaultDownloadManager, DownloadProgress } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
+import { detectWebGPU, getStorageQuota } from "@plugins/voiceMessageTranscriber/utils/hardwareDetect";
 
 const cl = classNameFactory("vc-asr-basic-settings-");
 
@@ -284,7 +284,7 @@ export function BasicSettings({
                         url,
                         component.sha256,
                         {
-                            onProgress: (progress) => {
+                            onProgress: progress => {
                                 setDownloadProgress(progress);
                             },
                         }
@@ -296,7 +296,7 @@ export function BasicSettings({
                     currentModel.url,
                     MODEL_CHECKSUMS[currentModel.id] || "",
                     {
-                        onProgress: (progress) => {
+                        onProgress: progress => {
                             setDownloadProgress(progress);
                         },
                     }
@@ -356,7 +356,7 @@ export function BasicSettings({
                     options={modelOptions}
                     placeholder={hasBackendModels ? "Select model" : "No models available for this backend"}
                     isSelected={v => v === activeModel}
-                    select={(value) => onModelChange(value)}
+                    select={value => onModelChange(value)}
                     serialize={v => String(v)}
                     isDisabled={!hasBackendModels || checkingModels}
                 />
@@ -393,7 +393,5 @@ function getModelsForBackend(backend: ASRBackend, hasWebGPU: boolean): ASRModel[
     const models = MODELS_BY_BACKEND[backend] || [];
     return models.filter(model => !model.requiresWebGPU || hasWebGPU);
 }
-
-import { MODEL_CHECKSUMS } from "../models/registry";
 
 export default BasicSettings;

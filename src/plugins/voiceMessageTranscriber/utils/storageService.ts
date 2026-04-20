@@ -1,3 +1,9 @@
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 /**
  * Storage Quota Service
  *
@@ -10,7 +16,7 @@
  * @module voiceMessageTranscriber/utils/storageService
  */
 
-import { ModelDownloadManager } from './downloadManager';
+import { ModelDownloadManager } from "./downloadManager";
 
 // ============================================================================
 // Types & Interfaces
@@ -82,7 +88,7 @@ const LOW_STORAGE_THRESHOLD = 0.9;
 const SAFETY_MARGIN_MB = 100;
 
 /** Settings storage key */
-const SETTINGS_KEY = 'asr-storage-settings';
+const SETTINGS_KEY = "asr-storage-settings";
 
 // ============================================================================
 // Error Classes
@@ -100,7 +106,7 @@ export class QuotaExceededError extends Error {
     public readonly userQuotaBytes: number
   ) {
     super(message);
-    this.name = 'QuotaExceededError';
+    this.name = "QuotaExceededError";
   }
 }
 
@@ -110,7 +116,7 @@ export class QuotaExceededError extends Error {
 export class PersistentStorageError extends Error {
   constructor(message: string, public readonly cause?: Error) {
     super(message);
-    this.name = 'PersistentStorageError';
+    this.name = "PersistentStorageError";
   }
 }
 
@@ -164,7 +170,7 @@ export function setStorageSettings(settings: Partial<StorageSettings>): void {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
   } catch (error) {
-    console.warn('[StorageService] Failed to save settings:', error);
+    console.warn("[StorageService] Failed to save settings:", error);
   }
 }
 
@@ -184,29 +190,29 @@ export function getMaxCacheSizeBytes(): number {
  * Check if Storage API is available
  */
 export function isStorageApiAvailable(): boolean {
-  return typeof navigator !== 'undefined' &&
-         'storage' in navigator &&
-         typeof navigator.storage?.estimate === 'function';
+  return typeof navigator !== "undefined" &&
+         "storage" in navigator &&
+         typeof navigator.storage?.estimate === "function";
 }
 
 /**
  * Request persistent storage permission
  */
 export async function requestPersistentStorage(): Promise<boolean> {
-  if (typeof navigator === 'undefined' || !navigator.storage?.persist) {
+  if (typeof navigator === "undefined" || !navigator.storage?.persist) {
     return false;
   }
 
   try {
     const granted = await navigator.storage.persist();
     if (granted) {
-      console.log('[StorageService] Persistent storage granted');
+      console.log("[StorageService] Persistent storage granted");
     }
     return granted;
   } catch (error) {
-    console.warn('[StorageService] Failed to request persistent storage:', error);
+    console.warn("[StorageService] Failed to request persistent storage:", error);
     throw new PersistentStorageError(
-      'Failed to request persistent storage',
+      "Failed to request persistent storage",
       error instanceof Error ? error : undefined
     );
   }
@@ -216,7 +222,7 @@ export async function requestPersistentStorage(): Promise<boolean> {
  * Check if storage is persistent
  */
 export async function isStoragePersistent(): Promise<boolean> {
-  if (typeof navigator === 'undefined' || !navigator.storage?.persisted) {
+  if (typeof navigator === "undefined" || !navigator.storage?.persisted) {
     return false;
   }
 
@@ -253,7 +259,7 @@ export async function getStorageInfo(downloadManager?: ModelDownloadManager): Pr
         usage = estimate.usage;
       }
     } catch (error) {
-      console.warn('[StorageService] Failed to get storage estimate:', error);
+      console.warn("[StorageService] Failed to get storage estimate:", error);
     }
   }
 
@@ -266,7 +272,7 @@ export async function getStorageInfo(downloadManager?: ModelDownloadManager): Pr
     try {
       modelsUsed = await downloadManager.getStorageUsed();
     } catch (error) {
-      console.warn('[StorageService] Failed to get models storage:', error);
+      console.warn("[StorageService] Failed to get models storage:", error);
     }
   }
 
@@ -420,7 +426,7 @@ export async function evictLRU(
 
     return result;
   } catch (error) {
-    console.error('[StorageService] LRU eviction failed:', error);
+    console.error("[StorageService] LRU eviction failed:", error);
     return {
       evictedIds,
       bytesFreed,
@@ -448,7 +454,7 @@ export async function validateAndPrepareDownload(
 
   if (!check.canDownload) {
     throw new QuotaExceededError(
-      check.reason || 'Storage quota exceeded',
+      check.reason || "Storage quota exceeded",
       modelSizeBytes,
       0,
       getMaxCacheSizeBytes()
@@ -519,7 +525,7 @@ export function onStorageLow(handler: StorageLowHandler): () => void {
  * Fire quota exceeded event
  */
 function fireQuotaExceededEvent(info: { requested: number; available: number; userQuota: number }): void {
-  console.warn('[StorageService] Quota exceeded:', {
+  console.warn("[StorageService] Quota exceeded:", {
     requestedMB: Math.round(info.requested / 1024 / 1024),
     availableMB: Math.round(info.available / 1024 / 1024),
     userQuotaMB: Math.round(info.userQuota / 1024 / 1024),
@@ -529,7 +535,7 @@ function fireQuotaExceededEvent(info: { requested: number; available: number; us
     try {
       handler(info);
     } catch (error) {
-      console.error('[StorageService] Error in quota exceeded handler:', error);
+      console.error("[StorageService] Error in quota exceeded handler:", error);
     }
   });
 }
@@ -538,7 +544,7 @@ function fireQuotaExceededEvent(info: { requested: number; available: number; us
  * Fire storage low event
  */
 function fireStorageLowEvent(info: { usedPercent: number; threshold: number; availableMB: number }): void {
-  console.warn('[StorageService] Storage low:', {
+  console.warn("[StorageService] Storage low:", {
     usedPercent: `${(info.usedPercent * 100).toFixed(1)}%`,
     threshold: `${(info.threshold * 100).toFixed(0)}%`,
     availableMB: Math.round(info.availableMB),
@@ -548,7 +554,7 @@ function fireStorageLowEvent(info: { usedPercent: number; threshold: number; ava
     try {
       handler(info);
     } catch (error) {
-      console.error('[StorageService] Error in storage low handler:', error);
+      console.error("[StorageService] Error in storage low handler:", error);
     }
   });
 }
@@ -561,10 +567,10 @@ function fireStorageLowEvent(info: { usedPercent: number; threshold: number; ava
  * Format bytes to human-readable string
  */
 export function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  if (bytes === Infinity) return 'Unlimited';
+  if (bytes === 0) return "0 B";
+  if (bytes === Infinity) return "Unlimited";
 
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const units = ["B", "KB", "MB", "GB", "TB"];
   const k = 1024;
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   const value = bytes / Math.pow(k, i);
@@ -604,7 +610,7 @@ export async function getStorageSummary(downloadManager?: ModelDownloadManager):
  */
 export async function clearAllStorage(downloadManager: ModelDownloadManager): Promise<void> {
   await downloadManager.clearCache();
-  console.log('[StorageService] All storage cleared');
+  console.log("[StorageService] All storage cleared");
 }
 
 // ============================================================================

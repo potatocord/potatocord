@@ -12,7 +12,7 @@
  * with clear explanations via tooltips.
  */
 
-import { DeviceType, BackendType } from "../utils/hardwareDetect";
+import { BackendType,DeviceType } from "@plugins/voiceMessageTranscriber/utils/hardwareDetect";
 
 // ============================================================================
 // Type Definitions
@@ -72,23 +72,23 @@ export type DisableReasonKey =
  */
 export const isDeviceDisabled = (backend: BackendType, device: DeviceType): boolean => {
     // Vosk backend (vosk-browser) uses WASM and only supports CPU
-    if (backend === 'vosk' && device !== 'cpu') {
+    if (backend === "vosk" && device !== "cpu") {
         return true;
     }
 
     // ONNX WASM backend runs on CPU only
-    if (backend === 'onnx-wasm' && device !== 'cpu') {
+    if (backend === "onnx-wasm" && device !== "cpu") {
         return true;
     }
 
     // ONNX WebGPU backend requires webgpu device or cpu fallback
-    if (backend === 'onnx-webgpu' && device === 'webgl') {
+    if (backend === "onnx-webgpu" && device === "webgl") {
         // WebGL is not used with ONNX WebGPU - use webgpu or cpu
         return true;
     }
 
     // whisper-cpp runs natively on CPU
-    if (backend === 'whisper-cpp' && device !== 'cpu') {
+    if (backend === "whisper-cpp" && device !== "cpu") {
         return true;
     }
 
@@ -118,12 +118,12 @@ export const isDeviceDisabled = (backend: BackendType, device: DeviceType): bool
  */
 export const isBackendDisabled = (backend: BackendType, hasWebGPU: boolean): boolean => {
     // ONNX WebGPU requires WebGPU support
-    if (backend === 'onnx-webgpu' && !hasWebGPU) {
+    if (backend === "onnx-webgpu" && !hasWebGPU) {
         return true;
     }
 
     // Transformers.js can use WebGPU for better performance
-    if (backend === 'transformers-js' && !hasWebGPU) {
+    if (backend === "transformers-js" && !hasWebGPU) {
         // Not strictly disabled but suboptimal - caller decides
         return false;
     }
@@ -140,7 +140,7 @@ export const isBackendDisabled = (backend: BackendType, hasWebGPU: boolean): boo
  */
 export const isBackendSuboptimal = (backend: BackendType, hasWebGPU: boolean): boolean => {
     // Running non-WebGPU backends when WebGPU is available
-    if (hasWebGPU && (backend === 'onnx-wasm' || backend === 'vosk')) {
+    if (hasWebGPU && (backend === "onnx-wasm" || backend === "vosk")) {
         return true;
     }
     return false;
@@ -221,46 +221,46 @@ export const isModelIncompatibleWithBackend = (
  * ```
  */
 export const getDisabledReason = (
-    type: 'device' | 'backend' | 'model',
+    type: "device" | "backend" | "model",
     value: string,
     context?: { backend?: BackendType; hasWebGPU?: boolean }
 ): string => {
     const { backend, hasWebGPU } = context || {};
 
     // Device disable reasons
-    if (type === 'device') {
-        if (backend === 'vosk' && value !== 'cpu') {
-            return 'Vosk only supports CPU execution (WebAssembly)';
+    if (type === "device") {
+        if (backend === "vosk" && value !== "cpu") {
+            return "Vosk only supports CPU execution (WebAssembly)";
         }
-        if (backend === 'onnx-wasm' && value !== 'cpu') {
-            return 'ONNX WASM runs on CPU only';
+        if (backend === "onnx-wasm" && value !== "cpu") {
+            return "ONNX WASM runs on CPU only";
         }
-        if (backend === 'whisper-cpp' && value !== 'cpu') {
-            return 'Whisper.cpp runs natively on CPU';
+        if (backend === "whisper-cpp" && value !== "cpu") {
+            return "Whisper.cpp runs natively on CPU";
         }
-        if (value === 'webgpu' && hasWebGPU === false) {
-            return 'WebGPU not available in this browser';
+        if (value === "webgpu" && hasWebGPU === false) {
+            return "WebGPU not available in this browser";
         }
         return `${value.toUpperCase()} not available with ${backend} backend`;
     }
 
     // Backend disable reasons
-    if (type === 'backend') {
-        if (value === 'onnx-webgpu' && hasWebGPU === false) {
-            return 'WebGPU not available in this browser';
+    if (type === "backend") {
+        if (value === "onnx-webgpu" && hasWebGPU === false) {
+            return "WebGPU not available in this browser";
         }
-        if (value === 'transformers-js') {
-            return 'WebGPU recommended for best performance';
+        if (value === "transformers-js") {
+            return "WebGPU recommended for best performance";
         }
         return `${value} backend not available`;
     }
 
     // Model disable reasons
-    if (type === 'model') {
-        return 'Model must be downloaded first (see Downloads panel)';
+    if (type === "model") {
+        return "Model must be downloaded first (see Downloads panel)";
     }
 
-    return 'Not available';
+    return "Not available";
 };
 
 /**
@@ -272,24 +272,24 @@ export const getDisabledReason = (
  * @returns Warning message or undefined if no warning
  */
 export const getSuboptimalWarning = (
-    type: 'device' | 'backend',
+    type: "device" | "backend",
     value: string,
     context?: { hasWebGPU?: boolean; hasNPUSupport?: boolean }
 ): string | undefined => {
     const { hasWebGPU } = context || {};
 
-    if (type === 'backend') {
-        if (hasWebGPU && value === 'onnx-wasm') {
-            return 'WebGPU available - using WASM for compatibility. Switch to ONNX WebGPU for faster inference.';
+    if (type === "backend") {
+        if (hasWebGPU && value === "onnx-wasm") {
+            return "WebGPU available - using WASM for compatibility. Switch to ONNX WebGPU for faster inference.";
         }
-        if (hasWebGPU && value === 'vosk') {
-            return 'WebGPU available but using Vosk. Consider ONNX WebGPU for better performance.';
+        if (hasWebGPU && value === "vosk") {
+            return "WebGPU available but using Vosk. Consider ONNX WebGPU for better performance.";
         }
     }
 
-    if (type === 'device') {
-        if (value === 'cpu' && hasWebGPU) {
-            return 'GPU available but using CPU. Select WebGPU for faster inference if supported.';
+    if (type === "device") {
+        if (value === "cpu" && hasWebGPU) {
+            return "GPU available but using CPU. Select WebGPU for faster inference if supported.";
         }
     }
 
@@ -316,8 +316,8 @@ export const buildDeviceOptions = (
     return baseOptions.map(opt => {
         const disabled = isDeviceDisabled(backend, opt.value);
         const tooltip = disabled
-            ? getDisabledReason('device', opt.value, { backend, hasWebGPU })
-            : getSuboptimalWarning('device', opt.value, { hasWebGPU });
+            ? getDisabledReason("device", opt.value, { backend, hasWebGPU })
+            : getSuboptimalWarning("device", opt.value, { hasWebGPU });
 
         return {
             ...opt,
@@ -341,8 +341,8 @@ export const buildBackendOptions = (
     return baseOptions.map(opt => {
         const disabled = isBackendDisabled(opt.value, hasWebGPU);
         const tooltip = disabled
-            ? getDisabledReason('backend', opt.value, { hasWebGPU })
-            : getSuboptimalWarning('backend', opt.value, { hasWebGPU });
+            ? getDisabledReason("backend", opt.value, { hasWebGPU })
+            : getSuboptimalWarning("backend", opt.value, { hasWebGPU });
 
         return {
             ...opt,
@@ -378,9 +378,9 @@ export const buildModelOptions = (
         let tooltip: string | undefined;
         if (disabled) {
             if (!isDownloaded) {
-                tooltip = getDisabledReason('model', opt.value);
+                tooltip = getDisabledReason("model", opt.value);
             } else if (currentBackend && opt.supportedBackends) {
-                tooltip = `Not compatible with ${currentBackend}. Supports: ${opt.supportedBackends.join(', ')}`;
+                tooltip = `Not compatible with ${currentBackend}. Supports: ${opt.supportedBackends.join(", ")}`;
             }
         }
 
@@ -422,16 +422,16 @@ export const getRecommendedDevice = (
     hasWebGPU: boolean
 ): DeviceType => {
     switch (backend) {
-        case 'onnx-webgpu':
-            return hasWebGPU ? 'webgpu' : 'cpu';
-        case 'onnx-wasm':
-        case 'vosk':
-        case 'whisper-cpp':
-            return 'cpu';
-        case 'transformers-js':
-            return hasWebGPU ? 'webgpu' : 'cpu';
+        case "onnx-webgpu":
+            return hasWebGPU ? "webgpu" : "cpu";
+        case "onnx-wasm":
+        case "vosk":
+        case "whisper-cpp":
+            return "cpu";
+        case "transformers-js":
+            return hasWebGPU ? "webgpu" : "cpu";
         default:
-            return 'cpu';
+            return "cpu";
     }
 };
 
@@ -461,7 +461,7 @@ export const getValidationError = (
         return null;
     }
 
-    return getDisabledReason('device', device, { backend });
+    return getDisabledReason("device", device, { backend });
 };
 
 // ============================================================================

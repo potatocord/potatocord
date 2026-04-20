@@ -14,12 +14,11 @@
  * - Network and debugging options
  */
 
-import React, { useState, useCallback, useMemo } from "react";
-import { Button, Forms, Slider } from "@webpack/common";
+import { Button, Forms, React,Slider } from "@webpack/common";
+const { useState, useCallback, useMemo } = React;
 import { Switch } from "@components/Switch";
-
-import { Quantization } from "../backends/types";
-import { ASRBackend } from "../models/registry";
+import { Quantization } from "@plugins/voiceMessageTranscriber/backends/types";
+import { ASRBackend } from "@plugins/voiceMessageTranscriber/models/registry";
 
 export interface AdvancedASRSettings {
     device: "auto" | "cpu" | "webgl" | "webgpu";

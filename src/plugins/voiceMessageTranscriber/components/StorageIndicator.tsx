@@ -5,12 +5,11 @@
  */
 
 import { classNameFactory } from "@utils/css";
-import { Margins } from "@utils/margins";
-import React, { useEffect, useState } from "react";
-import { Button, Forms, Text } from "@webpack/common";
+import { Button, Forms, React,Text } from "@webpack/common";
+const { useEffect, useState } = React;
 
-import { ModelDownloadManager } from "../utils/downloadManager";
-import { getStorageInfo, StorageInfo } from "../utils/storageService";
+import { ModelDownloadManager } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
+import { getStorageInfo, StorageInfo } from "@plugins/voiceMessageTranscriber/utils/storageService";
 
 const cl = classNameFactory("vc-asr-storage-indicator-");
 

@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { VOSK_MODELS } from "@plugins/voiceMessageTranscriber/models/registry";
+import { settings } from "@plugins/voiceMessageTranscriber/settings";
 import { createModel, KaldiRecognizer, Model } from "vosk-browser";
 
 import {
@@ -16,8 +18,6 @@ import {
     TranscriptionResult,
     TranscriptionSegment,
 } from "./types";
-import { settings } from "../settings";
-import { VOSK_MODELS } from "../models/registry";
 const VOSK_SMALL = VOSK_MODELS[0];
 
 // Default Vosk model URL (Small English model)
@@ -213,7 +213,7 @@ export class VoskBackend implements ASRBackend {
                 }
             };
 
-            this.recognizer!.on("result", (message) => {
+            this.recognizer!.on("result", message => {
                 if (message.result?.text) {
                     results.push(message.result.text);
                 }
@@ -221,7 +221,7 @@ export class VoskBackend implements ASRBackend {
                 maybeResolve();
             });
 
-            this.recognizer!.on("partialresult", (message) => {
+            this.recognizer!.on("partialresult", message => {
                 if (message.result?.partial) {
                     partialResult = message.result.partial;
                 }
@@ -229,7 +229,7 @@ export class VoskBackend implements ASRBackend {
                 maybeResolve();
             });
 
-            this.recognizer!.on("error", (message) => {
+            this.recognizer!.on("error", message => {
                 reject(new Error(message.error || "Vosk recognition error"));
             });
 

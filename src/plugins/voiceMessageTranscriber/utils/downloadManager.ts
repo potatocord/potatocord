@@ -1,6 +1,12 @@
+/*
+ * Potatocord, a Discord client mod
+ * Copyright (c) 2026 Potatocord and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
 /**
  * ModelDownloadManager - IndexedDB-based model download and caching system
- * 
+ *
  * Features:
  * - Chunked downloading for large models
  * - Resume capability for interrupted downloads
@@ -8,9 +14,9 @@
  * - HuggingFace CDN URL handling with CORS
  */
 
-const DB_NAME = 'ModelCacheDB';
+const DB_NAME = "ModelCacheDB";
 const DB_VERSION = 1;
-const STORE_NAME = 'models';
+const STORE_NAME = "models";
 const CHUNK_SIZE = 1024 * 1024; // 1MB chunks for efficient resume
 
 import { PluginNative } from "@utils/types";
@@ -60,11 +66,11 @@ export interface ModelInfo {
 export class DownloadError extends Error {
   constructor(
     message: string,
-    public readonly code: 'NETWORK_ERROR' | 'CHECKSUM_MISMATCH' | 'STORAGE_FULL' | 'ABORTED' | 'MAX_RETRIES',
+    public readonly code: "NETWORK_ERROR" | "CHECKSUM_MISMATCH" | "STORAGE_FULL" | "ABORTED" | "MAX_RETRIES",
     public readonly cause?: Error
   ) {
     super(message);
-    this.name = 'DownloadError';
+    this.name = "DownloadError";
   }
 }
 
@@ -96,13 +102,13 @@ export class ModelDownloadManager {
         resolve();
       };
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = event => {
         const db = (event.target as IDBOpenDBRequest).result;
-        
+
         // Create models store with id as key
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-          store.createIndex('downloadedAt', 'downloadedAt', { unique: false });
+          const store = db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          store.createIndex("downloadedAt", "downloadedAt", { unique: false });
         }
       };
     });
@@ -123,9 +129,9 @@ export class ModelDownloadManager {
    */
   async hasModel(modelId: string): Promise<boolean> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const transaction = this.db!.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(modelId);
 
@@ -144,9 +150,9 @@ export class ModelDownloadManager {
    */
   async getModel(modelId: string): Promise<ArrayBuffer | null> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const transaction = this.db!.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(modelId);
 
@@ -167,9 +173,9 @@ export class ModelDownloadManager {
    */
   async deleteModel(modelId: string): Promise<void> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const transaction = this.db!.transaction([STORE_NAME], "readwrite");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.delete(modelId);
 
@@ -183,9 +189,9 @@ export class ModelDownloadManager {
    */
   async getModelInfo(modelId: string): Promise<{ size: number; downloadedAt: Date; checksum: string } | null> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const transaction = this.db!.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(modelId);
 
@@ -236,11 +242,11 @@ export class ModelDownloadManager {
     let chunks: number[] = [];
 
     if (partialInfo && partialInfo.totalSize) {
-      resumeOffset = partialInfo.chunks?.length 
-        ? partialInfo.chunks.length * CHUNK_SIZE 
+      resumeOffset = partialInfo.chunks?.length
+        ? partialInfo.chunks.length * CHUNK_SIZE
         : 0;
       chunks = partialInfo.chunks || [];
-      
+
       if (resumeOffset > 0 && options.onResume) {
         options.onResume(resumeOffset);
       }
@@ -262,7 +268,7 @@ export class ModelDownloadManager {
         await this.deleteModel(modelId);
         throw new DownloadError(
           `Checksum mismatch: expected ${expectedChecksum}, got ${actualChecksum}`,
-          'CHECKSUM_MISMATCH'
+          "CHECKSUM_MISMATCH"
         );
       }
 
@@ -280,18 +286,18 @@ export class ModelDownloadManager {
       return data;
     } catch (error) {
       // Clean up partial download on failure
-      if (error instanceof DownloadError && error.code === 'ABORTED') {
+      if (error instanceof DownloadError && error.code === "ABORTED") {
         // Keep partial for resume, don't delete
         throw error;
       }
-      
+
       // For other errors, clean up partial
       try {
         await this.deleteModel(modelId);
       } catch {
         // Ignore cleanup errors
       }
-      
+
       throw error;
     }
   }
@@ -307,7 +313,7 @@ export class ModelDownloadManager {
     options: DownloadOptions
   ): Promise<{ data: ArrayBuffer; totalSize: number }> {
     const { onProgress, signal, retryCount = this.maxRetries, retryDelay = this.retryDelay } = options;
-    
+
     // First, get total size with HEAD request
     const totalSize = await this.getContentLength(url);
     const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
@@ -323,12 +329,12 @@ export class ModelDownloadManager {
       if (signal?.aborted) {
         // Save partial progress before aborting
         await this.savePartialProgress(modelId, totalSize, existingChunks.concat(chunks.map((_, i) => startChunkIndex + i)));
-        throw new DownloadError('Download aborted by user', 'ABORTED');
+        throw new DownloadError("Download aborted by user", "ABORTED");
       }
 
       const start = chunkIndex * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
-      
+
       let chunkData: ArrayBuffer | null = null;
       let attempts = 0;
 
@@ -337,17 +343,17 @@ export class ModelDownloadManager {
           chunkData = await this.fetchChunk(url, start, end, signal);
         } catch (error) {
           attempts++;
-          
+
           if (attempts > retryCount) {
             // Save partial progress before failing
             await this.savePartialProgress(
-              modelId, 
-              totalSize, 
+              modelId,
+              totalSize,
               existingChunks.concat(chunks.map((_, i) => startChunkIndex + i))
             );
             throw new DownloadError(
               `Failed to download chunk ${chunkIndex} after ${retryCount} retries`,
-              'MAX_RETRIES',
+              "MAX_RETRIES",
               error instanceof Error ? error : undefined
             );
           }
@@ -358,7 +364,7 @@ export class ModelDownloadManager {
       }
 
       if (!chunkData) {
-        throw new DownloadError(`Failed to download chunk ${chunkIndex}`, 'NETWORK_ERROR');
+        throw new DownloadError(`Failed to download chunk ${chunkIndex}`, "NETWORK_ERROR");
       }
 
       chunks.push(chunkData);
@@ -387,7 +393,7 @@ export class ModelDownloadManager {
 
     // Combine all chunks
     const combinedData = this.combineChunks(chunks, totalSize);
-    
+
     return { data: combinedData, totalSize };
   }
 
@@ -408,15 +414,15 @@ export class ModelDownloadManager {
     }
 
     const headers: HeadersInit = {
-      'Range': `bytes=${start}-${end}`
+      "Range": `bytes=${start}-${end}`
     };
 
     const response = await fetch(url, {
       headers,
       signal,
       // Enable CORS for HuggingFace CDN
-      mode: 'cors',
-      credentials: 'omit'
+      mode: "cors",
+      credentials: "omit"
     });
 
     if (!response.ok && response.status !== 206) {
@@ -435,31 +441,31 @@ export class ModelDownloadManager {
       if (result.error) {
         throw new DownloadError(
           `Failed to get content length: ${result.error}`,
-          'NETWORK_ERROR'
+          "NETWORK_ERROR"
         );
       }
       if (result.contentLength === undefined) {
-        throw new DownloadError('Content-Length header missing', 'NETWORK_ERROR');
+        throw new DownloadError("Content-Length header missing", "NETWORK_ERROR");
       }
       return result.contentLength;
     }
 
     const response = await fetch(url, {
-      method: 'HEAD',
-      mode: 'cors',
-      credentials: 'omit'
+      method: "HEAD",
+      mode: "cors",
+      credentials: "omit"
     });
 
     if (!response.ok) {
       throw new DownloadError(
         `Failed to get content length: HTTP ${response.status}`,
-        'NETWORK_ERROR'
+        "NETWORK_ERROR"
       );
     }
 
-    const contentLength = response.headers.get('content-length');
+    const contentLength = response.headers.get("content-length");
     if (!contentLength) {
-      throw new DownloadError('Content-Length header missing', 'NETWORK_ERROR');
+      throw new DownloadError("Content-Length header missing", "NETWORK_ERROR");
     }
 
     return parseInt(contentLength, 10);
@@ -485,7 +491,7 @@ export class ModelDownloadManager {
    */
   private async getPartialDownloadInfo(modelId: string): Promise<Partial<ModelRecord> | null> {
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const transaction = this.db!.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(modelId);
 
@@ -518,7 +524,7 @@ export class ModelDownloadManager {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const transaction = this.db!.transaction([STORE_NAME], "readwrite");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.put(record);
 
@@ -532,18 +538,18 @@ export class ModelDownloadManager {
    */
   private async saveModelRecord(record: ModelRecord): Promise<void> {
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const transaction = this.db!.transaction([STORE_NAME], "readwrite");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.put(record);
 
       request.onsuccess = () => resolve();
-      
+
       request.onerror = () => {
         // Check for quota exceeded error
-        if (request.error?.name === 'QuotaExceededError') {
+        if (request.error?.name === "QuotaExceededError") {
           reject(new DownloadError(
-            'Storage quota exceeded. Please free up space and try again.',
-            'STORAGE_FULL'
+            "Storage quota exceeded. Please free up space and try again.",
+            "STORAGE_FULL"
           ));
         } else {
           reject(request.error);
@@ -556,11 +562,11 @@ export class ModelDownloadManager {
    * Compute SHA-256 checksum of data
    */
   private async computeSHA256(data: ArrayBuffer): Promise<string> {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = new Uint8Array(hashBuffer);
     return Array.from(hashArray)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   /**
@@ -575,9 +581,9 @@ export class ModelDownloadManager {
    */
   async listCachedModels(): Promise<{ id: string; size: number; downloadedAt: Date }[]> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const transaction = this.db!.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.getAll();
 
@@ -601,9 +607,9 @@ export class ModelDownloadManager {
    */
   async clearCache(): Promise<void> {
     await this.init();
-    
+
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const transaction = this.db!.transaction([STORE_NAME], "readwrite");
       const store = transaction.objectStore(STORE_NAME);
       const request = store.clear();
 
@@ -629,14 +635,14 @@ export function buildHuggingFaceUrl(
   fileName: string,
   options: { revision?: string; subfolder?: string } = {}
 ): string {
-  const { revision = 'main', subfolder } = options;
-  
+  const { revision = "main", subfolder } = options;
+
   let path = modelId;
   if (subfolder) {
     path += `/${subfolder}`;
   }
-  
-  return `https://huggingface.co/${modelId}/resolve/${revision}/${subfolder ? subfolder + '/' : ''}${fileName}`;
+
+  return `https://huggingface.co/${modelId}/resolve/${revision}/${subfolder ? subfolder + "/" : ""}${fileName}`;
 }
 
 /**
