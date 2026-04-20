@@ -4,7 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { addContextMenuPatch, findGroupChildrenByChildId, NavContextMenuPatchCallback, removeContextMenuPatch } from "@api/ContextMenu";
+import "./styles.css";
+
+import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
+import { Devs } from "@utils/constants";
 import { Menu } from "@webpack/common";
 import definePlugin from "@utils/types";
 
@@ -13,6 +16,7 @@ import { getDefaultModelForBackend } from "./models/registry";
 import { migrateSettings } from "./migration";
 import { settings } from "./settings";
 import { transcribeVoiceMessage } from "./transcribe";
+import { TranscriptionAccessory } from "./TranscriptionAccessory";
 
 const BACKEND_OPTIONS: { id: ASRBackend; name: string }[] = [
     { id: "vosk", name: "Vosk (Legacy)" },
@@ -25,14 +29,15 @@ function getBackendDisplayName(backendId: ASRBackend): string {
     return option?.name || backendId;
 }
 
-const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }) => {
-    // Check if this is a voice message
-    const attachment = message.attachments?.[0];
-    if (!attachment?.content_type?.startsWith("audio/")) return;
+const IS_VOICE_MESSAGE_FLAG = 1 << 13;
 
-    // Find the group containing "copy-text"
-    const group = findGroupChildrenByChildId("copy-text", children);
-    if (!group) return;
+const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }) => {
+    const isVoiceMessage = (message.flags & IS_VOICE_MESSAGE_FLAG) !== 0;
+    const attachment = message.attachments?.[0];
+    const isAudioAttachment = attachment?.content_type?.startsWith("audio/") || attachment?.filename?.endsWith(".ogg");
+    
+    if (!isVoiceMessage && !isAudioAttachment) return;
+    if (!attachment?.url) return;
 
     // Main transcribe item with backend indicator
     const transcribeItem = (
@@ -69,29 +74,26 @@ const messageCtxPatch: NavContextMenuPatchCallback = (children, { message }) => 
         </Menu.MenuItem>
     );
 
-    // Insert items after "copy-text"
-    const copyIndex = group.findIndex(c => c?.props?.id === "copy-text");
-    if (copyIndex !== -1) {
-        group.splice(copyIndex + 1, 0, transcribeItem, switchBackendSubmenu);
+    const group = findGroupChildrenByChildId("copy-text", children) || findGroupChildrenByChildId("copy-link", children);
+    
+    if (group) {
+        const copyIndex = group.findIndex(c => c?.props?.id === "copy-text" || c?.props?.id === "copy-link");
+        group.splice(copyIndex !== -1 ? copyIndex + 1 : group.length, 0, transcribeItem, switchBackendSubmenu);
+    } else {
+        children.push(transcribeItem, switchBackendSubmenu);
     }
 };
 
 export default definePlugin({
     name: "VoiceMessageTranscriber",
     description: "Transcribe voice messages using local ASR models (Vosk, ONNX Runtime)",
-    authors: [{
-        name: "Potatocord",
-        id: 0n,
-    }],
+    authors: [Devs.Potatocord],
     settings,
     contextMenus: {
         "message": messageCtxPatch,
     },
     start() {
         migrateSettings();
-        addContextMenuPatch("message", messageCtxPatch);
     },
-    stop() {
-        removeContextMenuPatch("message", messageCtxPatch);
-    },
+    renderMessageAccessory: props => <TranscriptionAccessory message={props.message} />,
 });
