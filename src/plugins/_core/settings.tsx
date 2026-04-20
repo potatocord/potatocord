@@ -32,6 +32,7 @@ let LayoutTypes = {
     SECTION: 1,
     SIDEBAR_ITEM: 2,
     PANEL: 3,
+    TABS: 4,
     CATEGORY: 5,
     CUSTOM: 19,
 };
@@ -143,6 +144,13 @@ export default definePlugin({
             }
         },
         {
+            find: ".buildLayout().every",
+            replacement: {
+                match: /(\i)\.buildLayout\(\)(?=\.every)/,
+                replace: "$self.buildLayout($1)"
+            }
+        },
+        {
             find: "getWebUserSettingFromSection",
             replacement: {
                 match: /new Map\(\[(?=\[.{0,10}\.ACCOUNT,.{0,10}\.ACCOUNT_PANEL)/,
@@ -159,8 +167,8 @@ export default definePlugin({
             type: LayoutTypes.PANEL,
             useTitle: () => panelTitle,
             buildLayout: () => [{
-                type: LayoutTypes.CATEGORY,
-                key: key + "_category",
+                type: LayoutTypes.TABS,
+                key: key + "_tabs",
                 buildLayout: () => [{
                     type: LayoutTypes.CUSTOM,
                     key: key + "_custom",
