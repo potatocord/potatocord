@@ -32,11 +32,10 @@ let LayoutTypes = {
     SECTION: 1,
     SIDEBAR_ITEM: 2,
     PANEL: 3,
-    TABS: 4,
-    CATEGORY: 5,
+    PANE: 4,
     CUSTOM: 19,
 };
-waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "TABS", "CUSTOM"], v => LayoutTypes = v);
+waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "PANE", "CUSTOM"], v => LayoutTypes = v);
 
 const FallbackSectionTypes = {
     HEADER: "HEADER",
@@ -57,13 +56,11 @@ interface SettingsLayoutNode {
     type: number;
     key?: string;
     legacySearchKey?: string;
-    getLegacySearchKey?(): string;
     useLabel?(): string;
     useTitle?(): string;
     buildLayout?(): SettingsLayoutNode[];
     icon?(): ReactNode;
     render?(): ReactNode;
-    StronglyDiscouragedCustomComponent?(): ReactNode;
 }
 
 interface EntryOptions {
@@ -81,7 +78,7 @@ interface SettingsLayoutBuilder {
 const settings = definePluginSettings({
     settingsLocation: {
         type: OptionType.SELECT,
-        description: "Where to put the Vencord settings section",
+        description: "Where to put the Potatocord settings section",
         options: [
             { label: "At the very top", value: "top" },
             { label: "Above the Nitro section", value: "aboveNitro", default: true },
@@ -93,16 +90,6 @@ const settings = definePluginSettings({
     }
 });
 
-const settingsSectionMap: [string, string][] = [
-    ["VencordSettings", "vencord_main_panel"],
-    ["VencordPlugins", "vencord_plugins_panel"],
-    ["VencordThemes", "vencord_themes_panel"],
-    ["VencordUpdater", "vencord_updater_panel"],
-    ["VencordCloud", "vencord_cloud_panel"],
-    ["VencordBackupAndRestore", "vencord_backup_restore_panel"],
-    ["VencordPatchHelper", "vencord_patch_helper_panel"]
-];
-
 export default definePlugin({
     name: "Settings",
     description: "Adds Settings UI and debug info",
@@ -110,7 +97,6 @@ export default definePlugin({
     required: true,
 
     settings,
-    settingsSectionMap,
 
     patches: [
         {
@@ -149,46 +135,35 @@ export default definePlugin({
                 match: /(\i)\.buildLayout\(\)(?=\.every)/,
                 replace: "$self.buildLayout($1)"
             }
-        },
-        {
-            find: "getWebUserSettingFromSection",
-            replacement: {
-                match: /new Map\(\[(?=\[.{0,10}\.ACCOUNT,.{0,10}\.ACCOUNT_PANEL)/,
-                replace: "new Map([...$self.getSettingsSectionMappings(),"
-            }
         }
     ],
 
     buildEntry(options: EntryOptions): SettingsLayoutNode {
         const { key, title, panelTitle = title, Component, Icon } = options;
 
-        const panel: SettingsLayoutNode = {
-            key: key + "_panel",
-            type: LayoutTypes.PANEL,
-            useTitle: () => panelTitle,
-            buildLayout: () => [{
-                type: LayoutTypes.TABS,
-                key: key + "_tabs",
-                buildLayout: () => [{
-                    type: LayoutTypes.CUSTOM,
-                    key: key + "_custom",
-                    Component: Component,
-                    useSearchTerms: () => [title]
-                }]
-            }]
-        };
-
         return ({
             key,
             type: LayoutTypes.SIDEBAR_ITEM,
+            legacySearchKey: title.toUpperCase(),
             useTitle: () => title,
             icon: () => <Icon width={20} height={20} />,
-            buildLayout: () => [panel]
+            buildLayout: () => [
+                {
+                    key: key + "_panel",
+                    type: LayoutTypes.PANEL,
+                    useTitle: () => panelTitle,
+                    buildLayout: () => [
+                        {
+                            key: key + "_pane",
+                            type: LayoutTypes.PANE,
+                            buildLayout: () => [],
+                            render: () => <Component />,
+                            useTitle: () => panelTitle
+                        }
+                    ]
+                }
+            ]
         });
-    },
-
-    getSettingsSectionMappings() {
-        return settingsSectionMap;
     },
 
     buildLayout(originalLayoutBuilder: SettingsLayoutBuilder) {
@@ -203,8 +178,8 @@ export default definePlugin({
         const vencordEntries: SettingsLayoutNode[] = [
             buildEntry({
                 key: "vencord_main",
-                title: "Vencord",
-                panelTitle: "Vencord Settings",
+                title: "Potatocord",
+                panelTitle: "Potatocord Settings",
                 Component: VencordTab,
                 Icon: MainSettingsIcon
             }),
@@ -223,14 +198,14 @@ export default definePlugin({
             !IS_UPDATER_DISABLED && UpdaterTab && buildEntry({
                 key: "vencord_updater",
                 title: "Updater",
-                panelTitle: "Vencord Updater",
+                panelTitle: "Potatocord Updater",
                 Component: UpdaterTab,
                 Icon: UpdaterIcon
             }),
             buildEntry({
                 key: "vencord_cloud",
                 title: "Cloud",
-                panelTitle: "Vencord Cloud",
+                panelTitle: "Potatocord Cloud",
                 Component: CloudTab,
                 Icon: CloudIcon
             }),
@@ -264,7 +239,7 @@ export default definePlugin({
         const vencordSection: SettingsLayoutNode = {
             key: "vencord_section",
             type: LayoutTypes.SECTION,
-            useTitle: () => "Vencord Settings",
+            useLabel: () => "Potatocord",
             buildLayout: () => vencordEntries
         };
 
@@ -323,7 +298,7 @@ export default definePlugin({
     getInfoRows() {
         const { electronVersion, chromiumVersion, additionalInfo } = this;
 
-        const rows = [`Vencord ${gitHash}${additionalInfo}`];
+        const rows = [`Potatocord ${gitHash}${additionalInfo}`];
 
         if (electronVersion) rows.push(`Electron ${electronVersion}`);
         if (chromiumVersion) rows.push(`Chromium ${chromiumVersion}`);

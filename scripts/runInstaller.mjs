@@ -116,6 +116,20 @@ async function ensureBinary() {
 
 const installerBin = await ensureBinary();
 
+const argStart = process.argv.indexOf("--");
+const args = argStart === -1 ? [] : process.argv.slice(argStart + 1);
+
+// Determine if this is an install operation (not uninstall)
+const isInstall = !args.includes("--uninstall");
+
+// Preflight check: ensure dist/patcher.js exists for install operations
+const patcherPath = join(BASE_DIR, "dist", "patcher.js");
+if (isInstall && !existsSync(patcherPath)) {
+    console.error("Error: dist/patcher.js does not exist.");
+    console.error("Please build the project first with: pnpm build");
+    process.exit(1);
+}
+
 // Kill Discord processes and wait for them to actually terminate
 // The installer sometimes races with process shutdown on Windows
 async function killDiscordAndWait() {
@@ -162,16 +176,14 @@ await killDiscordAndWait();
 
 console.log("Now running Installer...");
 
-const argStart = process.argv.indexOf("--");
-const args = argStart === -1 ? [] : process.argv.slice(argStart + 1);
-
 try {
     execFileSync(installerBin, args, {
         stdio: "inherit",
         env: {
             ...process.env,
             VENCORD_USER_DATA_DIR: BASE_DIR,
-            VENCORD_DEV_INSTALL: "1"
+            VENCORD_DEV_INSTALL: "1",
+            VENCORD_DIRECTORY: patcherPath
         }
     });
 } catch {
