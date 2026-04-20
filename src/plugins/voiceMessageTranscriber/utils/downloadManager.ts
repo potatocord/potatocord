@@ -13,6 +13,10 @@ const DB_VERSION = 1;
 const STORE_NAME = 'models';
 const CHUNK_SIZE = 1024 * 1024; // 1MB chunks for efficient resume
 
+import { PluginNative } from "@utils/types";
+const Native = IS_DISCORD_DESKTOP ? VencordNative.pluginHelpers.VoiceMessageTranscriber as PluginNative<typeof import("../native")> : null;
+
+
 /** IndexedDB schema interface */
 interface ModelRecord {
   id: string;
@@ -396,6 +400,13 @@ export class ModelDownloadManager {
     end: number,
     signal?: AbortSignal
   ): Promise<ArrayBuffer> {
+    if (Native) {
+      const result = await Native.fetchModelChunk(url, start, end);
+      if (result.error) throw new Error(result.error);
+      if (!result.data) throw new Error("No data returned from native fetch");
+      return result.data.buffer.slice(result.data.byteOffset, result.data.byteOffset + result.data.byteLength);
+    }
+
     const headers: HeadersInit = {
       'Range': `bytes=${start}-${end}`
     };
@@ -419,6 +430,20 @@ export class ModelDownloadManager {
    * Get content length from URL
    */
   private async getContentLength(url: string): Promise<number> {
+    if (Native) {
+      const result = await Native.fetchModelContentLength(url);
+      if (result.error) {
+        throw new DownloadError(
+          `Failed to get content length: ${result.error}`,
+          'NETWORK_ERROR'
+        );
+      }
+      if (result.contentLength === undefined) {
+        throw new DownloadError('Content-Length header missing', 'NETWORK_ERROR');
+      }
+      return result.contentLength;
+    }
+
     const response = await fetch(url, {
       method: 'HEAD',
       mode: 'cors',
