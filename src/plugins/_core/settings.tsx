@@ -36,7 +36,7 @@ let LayoutTypes = {
     CATEGORY: 5,
     CUSTOM: 19,
 };
-waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "CUSTOM"], v => LayoutTypes = v);
+waitFor(["SECTION", "SIDEBAR_ITEM", "PANEL", "TABS", "CUSTOM"], v => LayoutTypes = v);
 
 const FallbackSectionTypes = {
     HEADER: "HEADER",
