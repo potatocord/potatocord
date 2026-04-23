@@ -14,8 +14,7 @@
  * - Network and debugging options
  */
 
-import { Button, Forms, React,Slider } from "@webpack/common";
-const { useState, useCallback, useMemo } = React;
+import { Button, Forms, React, Slider, useCallback, useMemo, useState } from "@webpack/common";
 import { Switch } from "@components/Switch";
 import { Quantization } from "@plugins/voiceMessageTranscriber/backends/types";
 import { ASRBackend } from "@plugins/voiceMessageTranscriber/models/registry";

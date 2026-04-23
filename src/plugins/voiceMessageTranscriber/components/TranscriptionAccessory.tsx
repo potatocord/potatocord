@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Button, React,Text } from "@webpack/common";
-const { useEffect, useState } = React;
+import { Button, Text, useEffect, useState } from "@webpack/common";
 
 import { addTranscriptionListener, cancelTranscription, isTranscriptionInProgress, TranscriptionCache } from "@plugins/voiceMessageTranscriber/transcribe";
 

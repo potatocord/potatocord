@@ -6,8 +6,7 @@
 
 import { classNameFactory } from "@utils/css";
 import { Margins } from "@utils/margins";
-import { Button, Forms, React,Select } from "@webpack/common";
-const { useEffect, useState } = React;
+import { Button, Forms, Select, useEffect, useState } from "@webpack/common";
 
 import { ASRBackend, ASRModel, AVAILABLE_MODELS, getDefaultModelForBackend, MODEL_CHECKSUMS,MODELS_BY_BACKEND } from "@plugins/voiceMessageTranscriber/models/registry";
 import { defaultDownloadManager, DownloadProgress } from "@plugins/voiceMessageTranscriber/utils/downloadManager";

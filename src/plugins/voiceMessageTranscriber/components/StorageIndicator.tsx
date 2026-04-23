@@ -5,8 +5,7 @@
  */
 
 import { classNameFactory } from "@utils/css";
-import { Button, Forms, React,Text } from "@webpack/common";
-const { useEffect, useState } = React;
+import { Button, Forms, React, Text, useEffect, useState } from "@webpack/common";
 
 import { ModelDownloadManager } from "@plugins/voiceMessageTranscriber/utils/downloadManager";
 import { getStorageInfo, StorageInfo } from "@plugins/voiceMessageTranscriber/utils/storageService";
